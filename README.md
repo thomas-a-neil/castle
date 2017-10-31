@@ -15,6 +15,7 @@ pip3 install -r requirements.txt
 
 # Running tests
 
+For now, add the python path to allow for relative imports. We'll try to remove this later.
 ```
-py.test
+PYTHONPATH=. py.test
 ```
