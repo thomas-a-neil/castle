@@ -12,3 +12,9 @@ UC Berkeley CS 294-112 final project Fall 2017.
 virtualenv -p python3 venv
 pip3 install -r requirements.txt
 ```
+
+# Running tests
+
+```
+py.test
+```
