@@ -2,3 +2,4 @@ ipython
 python-chess
 numpy
 pytest
+tensorflow

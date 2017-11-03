@@ -23,7 +23,7 @@ class TestPrediction(unittest.TestCase):
     def test_train(self):
         pi = np.random.random_sample([10, 64*64])
         # violates unit testing protocol, but w/e
-        initial_loss = self.sess.run([self.net.loss],
+        initial_loss = self.sess.run(self.net.loss,
                                      feed_dict={self.net.board_placeholder: self.boards,
                                                 self.net.pi: pi,
                                                 self.net.z: self.z})
@@ -42,7 +42,7 @@ class TestPrediction(unittest.TestCase):
 
     def test_regularization(self):
         pi = np.random.random_sample([10, 64*64])
-        regularization_loss = self.sess.run([self.net.regularization_loss],
+        regularization_loss = self.sess.run(self.net.regularization_loss,
                                      feed_dict={self.net.board_placeholder: self.boards,
                                                 self.net.pi: pi,
                                                 self.net.z: self.z})
