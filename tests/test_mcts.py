@@ -4,7 +4,7 @@ import unittest
 from mcts import backup, select, expand_node, exploration_bonus_for_c_puct, perform_rollouts, get_action_distribution
 from tree import Node
 
-from utils import setup_simple_tree, mock_model, mock_env
+from utils import setup_simple_tree, mock_model, mock_env, numline_env, mock_model_numline
 
 
 class TestMCTS(unittest.TestCase):
@@ -81,6 +81,22 @@ class TestRollouts(unittest.TestCase):
         edge0, edge1 = root_node.outgoing_edges
         self.assertEquals(edge0.num_visits, 1)
         self.assertEquals(edge1.num_visits, 1)
+
+    def test_numline_rollouts(self):
+        root_node = Node(0)
+        n_leaf_expansions = 100
+        c = 100  # to make sure we explore a new path every time
+        exploration_bonus = partial(exploration_bonus_for_c_puct, c_puct=c)
+        perform_rollouts(root_node, n_leaf_expansions, mock_model_numline, numline_env, exploration_bonus)
+        edge0, edge1 = root_node.outgoing_edges
+        edge10, edge11 = edge1.out_node.outgoing_edges
+        edge110, edge111 = edge11.out_node.outgoing_edges
+        edge1110, edge1111 = edge111.out_node.outgoing_edges
+        edge11110, edge11111 = edge1111.out_node.outgoing_edges
+
+        self.assertTrue(edge0.num_visits < edge1.num_visits)
+        self.assertTrue(edge10.num_visits < edge11.num_visits)
+        self.assertTrue(edge11110.num_visits > edge11111.num_visits)
 
     def test_get_action_distribution(self):
         start_state = 0
