@@ -92,7 +92,7 @@ def build_mlp(board_placeholder,
 
 class DualNet(object):
 
-    def __init__(self, sess, representation='pos', learning_rate=0.01, regularization_mult=0.01):
+    def __init__(self, sess, representation='pos', learning_rate=0.01, regularization_mult=0.01, n_residual_layers=2):
         """
         sess: tensorflow session
         representation: 'pos' for (pos1, pos2) action representation, 'piece' for (piece, pos) rep
@@ -100,9 +100,9 @@ class DualNet(object):
         regularization_mult: multiplier for weight regularization loss
         """
         self.board_placeholder = tf.placeholder(tf.float32, [None, 8, 8, 13])
-        shared_layers = [{'layer': 'conv', 'num_outputs': 256, 'stride': 3, 'kernel_size': 1, 'activation_fn': tf.nn.relu},
-                         {'layer': 'residual', 'num_outputs': 256, 'stride': 1, 'kernel_size': 3, 'activation_fn': tf.nn.relu},
-                         {'layer': 'residual', 'num_outputs': 256, 'stride': 1, 'kernel_size': 3, 'activation_fn': tf.nn.relu}]
+        shared_layers = [{'layer': 'conv', 'num_outputs': 256, 'stride': 3, 'kernel_size': 1, 'activation_fn': tf.nn.relu}]
+        # add n_residual_layers to the shared layers
+        shared_layers += n_residual_layers*[{'layer': 'residual', 'num_outputs': 256, 'stride': 1, 'kernel_size': 3, 'activation_fn': tf.nn.relu}]
         if representation == 'pos':
             policy_layers = [{'layer': 'conv', 'num_outputs': 2, 'stride': 1, 'kernel_size': 1, 'activation_fn': tf.nn.relu},
                              {'layer': 'fc', 'num_outputs': 64*64, 'activation_fn': None}]
