@@ -1,7 +1,7 @@
 from functools import partial
 import unittest
 
-from mcts import backprop, select, expand_node, exploration_bonus_for_c_puct, perform_rollouts, get_action_distribution
+from mcts import backup, select, expand_node, exploration_bonus_for_c_puct, perform_rollouts, get_action_distribution
 from tree import Node
 
 from utils import setup_simple_tree, mock_model, mock_env
@@ -11,28 +11,28 @@ class TestMCTS(unittest.TestCase):
     def setUp(self):
         self.nodes = setup_simple_tree()
 
-    def test_backprop(self):
+    def test_backup(self):
         edge = self.nodes[1].in_edge
         self.assertEqual(edge.action, 0)
         self.assertEqual(edge.num_visits, 0)
         self.assertEqual(edge.total_action_value, 0.0)
         self.assertEqual(edge.mean_action_value, 0.0)
 
-        backprop(self.nodes[1], 1)
+        backup(self.nodes[1], 1)
 
         self.assertEqual(edge.action, 0)
         self.assertEqual(edge.num_visits, 1)
         self.assertEqual(edge.total_action_value, 1.0)
         self.assertEqual(edge.mean_action_value, 1.0)
 
-    def test_two_level_backprop(self):
+    def test_two_level_backup(self):
         edge = self.nodes[1].in_edge
         self.assertEqual(edge.action, 0)
         self.assertEqual(edge.num_visits, 0)
         self.assertEqual(edge.total_action_value, 0.0)
         self.assertEqual(edge.mean_action_value, 0.0)
 
-        backprop(self.nodes[4], 1)
+        backup(self.nodes[4], 1)
 
         self.assertEqual(edge.action, 0)
         self.assertEqual(edge.num_visits, 1)

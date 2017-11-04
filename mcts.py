@@ -28,9 +28,10 @@ def select(node, exploration_bonus):
     return node.outgoing_edges[index]
 
 
-def backprop(node, value):
+def backup(node, value):
     """
-    Propagate the value for the current node back
+    Propagate the value for the current node back up
+    the tree
     """
     cur_node = node
     # while not root, move the value up
@@ -84,7 +85,7 @@ def perform_rollouts(root_node,
         cur_node = edge.out_node
         # find a node you haven't expanded yet, expand it
         value = expand_node(cur_node, model, env)
-        backprop(cur_node, value)
+        backup(cur_node, value)
 
         n_leaf_expansions -= 1
 
