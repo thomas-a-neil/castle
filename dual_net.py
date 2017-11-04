@@ -29,13 +29,13 @@ def residual_block(tensor, specs):
     return tensor
 
 
-def build_mlp(board_placeholder,
-              scope,
-              shared_layers,
-              policy_head,
-              value_head):
+def build_model(board_placeholder,
+                scope,
+                shared_layers,
+                policy_head,
+                value_head):
     """
-    Returns the output tensors for an mlp based on the layers in shared_layers,
+    Returns the output tensors for an model based on the layers in shared_layers,
     policy_head, and value_head.
     shared_layers is a list of dicts, each dict representing a layer.
     - Convolutional layers:
@@ -113,11 +113,11 @@ class DualNet(object):
                         {'layer': 'fc', 'num_outputs': 256, 'activation_fn': tf.nn.relu},
                         {'layer': 'fc', 'num_outputs': 1, 'activation_fn': tf.nn.tanh}]
 
-        self.policy_predict, self.value_predict = build_mlp(self.board_placeholder,
-                                                            scope='net',
-                                                            shared_layers=shared_layers,
-                                                            policy_head=policy_layers,
-                                                            value_head=value_layers)
+        self.policy_predict, self.value_predict = build_model(self.board_placeholder,
+                                                              scope='net',
+                                                              shared_layers=shared_layers,
+                                                              policy_head=policy_layers,
+                                                              value_head=value_layers)
         self.z = tf.placeholder(tf.float32, [None])
         if representation == 'pos':
             self.pi = tf.placeholder(tf.float32, [None, 64*64])
