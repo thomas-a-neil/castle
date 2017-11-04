@@ -21,25 +21,9 @@ class TestPrediction(unittest.TestCase):
         policy, value = self.net(self.boards)
         self.assertEqual(policy.shape, (10, 64*64))
 
-    def test_train(self):
-        pi = np.random.random_sample([10, 64*64])
-        # violates unit testing protocol, but w/e
-        initial_loss = self.sess.run(self.net.loss,
-                                     feed_dict={self.net.board_placeholder: self.boards,
-                                                self.net.pi: pi,
-                                                self.net.z: self.z})
-        loss = self.net.train(self.boards, pi, self.z)
-        self.assertGreater(initial_loss, loss)
-
-    def test_train_with_piece_action(self):
-        pi = np.random.random_sample([10, 32*64])
-
-        initial_loss = self.sess.run(self.piece_net.loss,
-                                     feed_dict={self.piece_net.board_placeholder: self.boards,
-                                                self.piece_net.pi: pi,
-                                                self.piece_net.z: self.z})
-        loss = self.piece_net.train(self.boards, pi, self.z)
-        self.assertGreater(initial_loss, loss)
+    def test_predict_with_piece_action(self):
+        policy, value = self.piece_net(self.boards)
+        self.assertEqual(policy.shape, (10, 32*64))
 
     def test_regularization(self):
         pi = np.random.random_sample([10, 64*64])
