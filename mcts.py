@@ -35,7 +35,7 @@ def backprop(node, value):
     cur_node = node
     # while not root, move the value up
     while cur_node.in_edge is not None:
-        edge = node.in_edge
+        edge = cur_node.in_edge
         edge.num_visits += 1
         edge.total_action_value += value
         cur_node = edge.in_node
@@ -77,11 +77,11 @@ def perform_rollouts(root_node,
     value = expand_node(root_node, model, env)
     while n_leaf_expansions > 0:
         # expand root
-        edge = select(cur_node, exploration_bonus)
-        cur_node = edge.out_node
-        while cur_node.num_visits != 0:
-            edge = select(cur_node, exploration_bonus)
+        edge = select(root_node, exploration_bonus)
+        while edge.num_visits != 0:
             cur_node = edge.out_node
+            edge = select(cur_node, exploration_bonus)
+        cur_node = edge.out_node
         # find a node you haven't expanded yet, expand it
         value = expand_node(cur_node, model, env)
         backprop(cur_node, value)

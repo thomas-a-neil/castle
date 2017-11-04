@@ -20,7 +20,7 @@ class LegalActionsOnlyModel(object):
         action_probs, value = self.model(state)
         legal_action_probs = []
         for i, action_prob in enumerate(action_probs):
-            if self.env.is_legal(i):
+            if self.env.is_legal(state, i):
                 legal_action_probs.append(action_prob)
             else:
                 legal_action_probs.append(0.0)

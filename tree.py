@@ -16,6 +16,9 @@ class Node(object):
     def add_incoming_edge(self, edge):
         self.in_edge = edge
 
+    def __repr__(self):
+        return 'Node. Children: {} State: {}'.format([edge.out_node.state for edge in self.outgoing_edges], self.state)
+
 
 class Edge(object):
     def __init__(self,
@@ -37,6 +40,9 @@ class Edge(object):
         if self.num_visits == 0:
             return 0.0
         return self.total_action_value / self.num_visits
+
+    def __repr__(self):
+        return 'Edge. In: {} Out: {} Action: {}'.format(self.in_node.state, self.out_node.state, self.action)
 
 
 def create_new_connection(parent_node, child_node, action, prior_probability):
