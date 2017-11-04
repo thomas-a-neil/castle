@@ -41,7 +41,7 @@ class Edge(object):
 
 def create_new_connection(parent_node, child_node, action, prior_probability):
     """
-    Returns the edge connecting root and child
+    Returns the edge connecting parent and child
     """
     edge = Edge(parent_node, child_node, action, prior_probability)
     parent_node.add_outgoing_edge(edge)
