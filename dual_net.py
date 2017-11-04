@@ -131,7 +131,7 @@ class DualNet(object):
         self.update_op = tf.train.AdamOptimizer(learning_rate).minimize(self.loss)
         self.sess = sess
 
-    def predict(self, inp):
+    def __call__(self, inp):
         """
         Gets a feed-forward prediction for a batch of input boards of shape [None, 8, 8, 12]
         """
