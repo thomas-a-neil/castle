@@ -92,10 +92,10 @@ def build_mlp(board_placeholder,
 
 class DualNet(object):
 
-    def __init__(self, sess, action_rep='pos', learning_rate=0.01, regularization_mult=0.01):
+    def __init__(self, sess, representation='pos', learning_rate=0.01, regularization_mult=0.01):
         """
         sess: tensorflow session
-        action_rep: 'pos' for (pos1, pos2) action representation, 'piece' for (piece, pos) rep
+        representation: 'pos' for (pos1, pos2) action representation, 'piece' for (piece, pos) rep
         learning_rate: learning rate for gradient descent
         regularization_mult: multiplier for weight regularization loss
         """
@@ -103,10 +103,10 @@ class DualNet(object):
         shared_layers = [{'layer': 'conv', 'num_outputs': 256, 'stride': 3, 'kernel_size': 1, 'activation_fn': tf.nn.relu},
                          {'layer': 'residual', 'num_outputs': 256, 'stride': 1, 'kernel_size': 3, 'activation_fn': tf.nn.relu},
                          {'layer': 'residual', 'num_outputs': 256, 'stride': 1, 'kernel_size': 3, 'activation_fn': tf.nn.relu}]
-        if action_rep == 'pos':
+        if representation == 'pos':
             policy_layers = [{'layer': 'conv', 'num_outputs': 2, 'stride': 1, 'kernel_size': 1, 'activation_fn': tf.nn.relu},
                              {'layer': 'fc', 'num_outputs': 64*64, 'activation_fn': None}]
-        elif action_rep == 'piece':
+        elif representation == 'piece':
             policy_layers = [{'layer': 'conv', 'num_outputs': 2, 'stride': 1, 'kernel_size': 1, 'activation_fn': tf.nn.relu},
                              {'layer': 'fc', 'num_outputs': 32*64, 'activation_fn': None}]
         value_layers = [{'layer': 'conv', 'num_outputs': 1, 'stride': 1, 'kernel_size': 1, 'activation_fn': tf.nn.relu},
@@ -119,9 +119,9 @@ class DualNet(object):
                                                             policy_head=policy_layers,
                                                             value_head=value_layers)
         self.z = tf.placeholder(tf.float32, [None])
-        if action_rep == 'pos':
+        if representation == 'pos':
             self.pi = tf.placeholder(tf.float32, [None, 64*64])
-        elif action_rep == 'piece':
+        elif representation == 'piece':
             self.pi = tf.placeholder(tf.float32, [None, 32*64])
         self.value_loss = tf.reduce_sum(tf.square(self.value_predict - self.z))
         self.policy_loss = tf.reduce_sum(tf.multiply(self.pi, self.policy_predict))
