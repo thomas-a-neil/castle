@@ -1,48 +1,11 @@
 import numpy as np
+from functools import partial
+
+from model import LegalActionsOnlyModel
+from tree import Node, create_new_connection
 
 
-class Node(object):
-    def __init__(self, state, outgoing_edges=None, in_edge=None):
-        self.state = state
-        if outgoing_edges is not None:
-            self.outgoing_edges = outgoing_edges
-        else:
-            self.outgoing_edges = []
-        self.in_edge = in_edge
-
-    def add_outgoing_edge(self, edge):
-        self.outgoing_edges.append(edge)
-
-    def add_outgoing_edges(self, edges):
-        self.outgoing_edges.extend(edges)
-
-    def add_incoming_edge(self, edge):
-        self.in_edge = edge
-
-
-class Edge(object):
-    def __init__(self,
-                 in_node,
-                 out_node,
-                 action,
-                 prior_probability,
-                 num_visits=0,
-                 total_action_value=0.0):
-        self.in_node = in_node
-        self.out_node = out_node  # node
-        self.action = action
-        self.num_visits = num_visits
-        self.total_action_value = total_action_value
-        self.prior_probability = prior_probability
-
-    @property
-    def mean_action_value(self):
-        if self.num_visits == 0:
-            return 0.0
-        return self.total_action_value / self.num_visits
-
-
-def exploration_bonus(edge, c_puct):
+def exploration_bonus_for_c_puct(edge, c_puct):
     """
     Determines a score for an edge that favors exploration
     c_puct is a constant factor that scales how favorable exploration is
@@ -51,34 +14,116 @@ def exploration_bonus(edge, c_puct):
     return c_puct * edge.prior_probability * np.sqrt(sum_visits) / (1 + edge.num_visits)
 
 
-def select(node, c_puct):
+def select(node, exploration_bonus):
     """
     Select the next edge to expand
     c_puct is a constant factor that scales how favorable exploration is
+    exploration_bonus: function
+        Function that takes (edge) as input and returns a score based on
+        how good the edge is to explore with our exploration rate.
     """
-    def score(edge, c_puct):
-        return edge.mean_action_value + exploration_bonus(edge, c_puct)
-    index = np.argmax([score(edge, c_puct) for edge in node.outgoing_edges])
+    def score(edge):
+        return edge.mean_action_value + exploration_bonus(edge)
+    index = np.argmax([score(edge) for edge in node.outgoing_edges])
     return node.outgoing_edges[index]
 
 
-def evaluate(node, model, env):
+def backup(node, value):
     """
-    Return the probability vector for actions,
-    and the value of the current state
-    """
-    prob_vector, value = model(node.state, env)
-    return prob_vector, value
-
-
-def backprop(node, value):
-    """
-    Propagate the value for the current node back
+    Propagate the value for the current node back up
+    the tree
     """
     cur_node = node
     # while not root, move the value up
     while cur_node.in_edge is not None:
-        edge = node.in_edge
+        edge = cur_node.in_edge
         edge.num_visits += 1
         edge.total_action_value += value
         cur_node = edge.in_node
+
+
+def expand_node(node, model, env):
+    action_probs, value = model(node)
+    for i, action_prob in enumerate(action_probs):
+        action = i  # actions are just indexes
+        next_state = env.get_next_state(node.state, action)
+        child_node = Node(next_state)
+        create_new_connection(node, child_node, action, action_prob)
+    return value
+
+
+def perform_rollouts(root_node,
+                     n_leaf_expansions,
+                     model,
+                     env,
+                     exploration_bonus):
+    """
+    Parameters
+    ----------
+    root_node: Node
+        initial node to start MCTS
+    n_leaf_expansions: int
+        number of leaves to expand in each iteration of MCTS when picking an action
+    model: function
+        Model to use for computing the value of each state,
+        prob_vector, value = model(node.state, env)
+    env:
+        game playing environment that can progress game state and give us legal moves
+    exploration_bonus: function
+        Function that takes (edge) as input and returns a score based on
+        how good the edge is to explore with our exploration rate.
+    """
+    cur_node = root_node
+    # add all edges and children for current node
+    value = expand_node(root_node, model, env)
+    while n_leaf_expansions > 0:
+        # expand root
+        edge = select(root_node, exploration_bonus)
+        while edge.num_visits != 0:
+            cur_node = edge.out_node
+            edge = select(cur_node, exploration_bonus)
+        cur_node = edge.out_node
+        # find a node you haven't expanded yet, expand it
+        value = expand_node(cur_node, model, env)
+        backup(cur_node, value)
+
+        n_leaf_expansions -= 1
+
+
+def get_action_distribution(start_state,
+                            temperature,
+                            n_leaf_expansions,
+                            model,
+                            env,
+                            c_puct):
+    """
+    Returns the distribution over all actions after exploring the trees.
+    This distribution pi(s) should be an improvement over the original p(s)
+    output by the model.
+
+    Parameters
+    ----------
+    root_node: Node
+        initial node to start MCTS
+    temperature: int
+        how much to explore low probability states
+    n_leaf_expansions: int
+        number of leaves to expand in each iteration of MCTS when picking an action
+    model: function
+        Model to use for computing the value of each state,
+        prob_vector, value = model(node.state, env)
+    env:
+        game playing environment that can progress game state and give us legal moves
+    c_puct: float
+        Constant that dictates how much score is assigned to exploring.
+    """
+    # set up the exploration_bonus function with the constant specified
+    exploration_bonus = partial(exploration_bonus_for_c_puct, c_puct=c_puct)
+
+    model = LegalActionsOnlyModel(model, env)
+    root_node = Node(start_state)
+    perform_rollouts(root_node, n_leaf_expansions, model, env, exploration_bonus)
+    visit_counts = np.array([edge.num_visits for edge in root_node.outgoing_edges])
+    distribution = np.power(visit_counts, 1/temperature)
+    # normalize
+    return distribution / np.sum(distribution)

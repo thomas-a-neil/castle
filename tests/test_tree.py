@@ -1,10 +1,8 @@
 import unittest
 
-from mcts import Node, Edge, backprop, evaluate, select
+from tree import Node, Edge
 
-
-def mock_model(state, env):
-    return (0.5, 0.5), 1
+from utils import setup_simple_tree
 
 
 class TestInit(unittest.TestCase):
@@ -46,70 +44,3 @@ class TestInit(unittest.TestCase):
         # parent of 3 is 1
         self.assertEqual(nodes[3].in_edge.in_node.state, 1)
         self.assertEqual(len(nodes[6].outgoing_edges), 0)
-
-
-class TestMCTS(unittest.TestCase):
-    def setUp(self):
-        self.nodes = setup_simple_tree()
-
-    def test_backprop(self):
-        edge = self.nodes[1].in_edge
-        self.assertEqual(edge.action, 0)
-        self.assertEqual(edge.num_visits, 0)
-        self.assertEqual(edge.total_action_value, 0.0)
-        self.assertEqual(edge.mean_action_value, 0.0)
-
-        backprop(self.nodes[1], 1)
-
-        self.assertEqual(edge.action, 0)
-        self.assertEqual(edge.num_visits, 1)
-        self.assertEqual(edge.total_action_value, 1.0)
-        self.assertEqual(edge.mean_action_value, 1.0)
-
-    def test_select_exploration(self):
-        self.nodes[1].in_edge.num_visits = 100
-
-        # all things being equal, select unexplored action c=1
-        selected_edge = select(self.nodes[0], 1)
-
-        self.assertEqual(selected_edge.action, 1)
-        self.assertEqual(selected_edge.num_visits, 0)
-
-    def test_select_no_exploration(self):
-        self.nodes[1].in_edge.num_visits = 100
-        self.nodes[1].in_edge.total_action_value = 1000
-
-        # select the action with best known reward c=0
-        selected_edge = select(self.nodes[0], 0)
-
-        self.assertEqual(selected_edge.action, 0)
-        self.assertEqual(selected_edge.num_visits, 100)
-
-    def test_evaluate(self):
-        prob_vector, value = evaluate(self.nodes[0], mock_model, 'foo_env')
-        self.assertEqual(prob_vector, (0.5, 0.5))
-        self.assertEqual(value, 1)
-
-
-def setup_simple_tree():
-    #      0
-    #   1     2
-    #  3 4   5 6
-    nodes = [Node(i) for i in range(7)]
-    for i in range(3):
-        in_node = nodes[i]
-        out_node = nodes[2*(i + 1) - 1]
-        edge0 = Edge(in_node, out_node, 0, 0.5)
-        in_node.add_outgoing_edge(edge0)
-        out_node.add_incoming_edge(edge0)
-
-        out_node = nodes[2*(i + 1)]
-        edge1 = Edge(in_node, out_node, 1, 0.5)
-        in_node.add_outgoing_edge(edge1)
-        out_node.add_incoming_edge(edge1)
-
-    return nodes
-
-
-if __name__ == '__main__':
-    unittest.main()
