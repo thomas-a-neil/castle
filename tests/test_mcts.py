@@ -1,5 +1,6 @@
 from functools import partial
 import unittest
+import numpy as np
 
 from mcts import backup, select, expand_node, exploration_bonus_for_c_puct, perform_rollouts, get_action_distribution
 from tree import Node
@@ -63,12 +64,13 @@ class TestMCTS(unittest.TestCase):
         self.assertEqual(selected_edge.num_visits, 100)
 
     def test_expand_node(self):
+        self.nodes[6].state = np.array([6])
         self.assertEqual(len(self.nodes[6].outgoing_edges), 0)
         value = expand_node(self.nodes[6], mock_model, mock_env)
         self.assertEqual(value, 1)
         self.assertEqual(len(self.nodes[6].outgoing_edges), 2)
-        next_states = set(edge.out_node.state for edge in self.nodes[6].outgoing_edges)
-        self.assertEqual(next_states, {13, 14})
+        next_states = np.array([edge.out_node.state for edge in self.nodes[6].outgoing_edges])
+        self.assertTrue(np.array_equal(next_states, np.array([[13], [14]])) or np.array_equal(next_states, np.array([[14], [13]])))
 
 
 class TestRollouts(unittest.TestCase):

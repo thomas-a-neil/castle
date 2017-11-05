@@ -31,7 +31,7 @@ class TestPrediction(unittest.TestCase):
 
     def test_predict(self):
         sess = tf.Session()
-        net = DualNet(sess)
+        net = DualNet(sess, 'standard_conv', 'pos_pos')
         sess.__enter__()
         tf.global_variables_initializer().run()
         policy, value = net(self.boards)
@@ -39,7 +39,7 @@ class TestPrediction(unittest.TestCase):
 
     def test_predict_with_piece_action(self):
         sess = tf.Session()
-        piece_net = DualNet(sess, representation='piece')
+        piece_net = DualNet(sess, 'standard_conv', 'piece_pos')
         sess.__enter__()
         tf.global_variables_initializer().run()
         policy, value = piece_net(self.boards)
@@ -47,7 +47,7 @@ class TestPrediction(unittest.TestCase):
 
     def test_regularization(self):
         sess = tf.Session()
-        net = DualNet(sess)
+        net = DualNet(sess, 'standard_conv', 'pos_pos')
         sess.__enter__()
         tf.global_variables_initializer().run()
         pi = np.random.random_sample([10, 64*64])

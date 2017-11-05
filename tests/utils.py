@@ -1,8 +1,8 @@
 from tree import Node, create_new_connection
-
+import numpy as np
 
 def mock_model(state):
-    return (0.5, 0.5), 1
+    return np.array([0.5, 0.5]), 1
 
 def mock_model_numline(state):
     if state > 3:
@@ -14,7 +14,7 @@ def mock_model_numline(state):
     else:
         value = 0
         action_0_prob = 0.1
-    return (action_0_prob, 1 - action_0_prob), state 
+    return np.array([action_0_prob, 1 - action_0_prob]), state 
 
 class MockEnv(object):
     """
@@ -32,6 +32,9 @@ class MockEnv(object):
         Given the current state and submitted action, is it legal?
         """
         return (action == 0 or action == 1)
+
+    def get_legal_actions(self, state):
+        return np.array([0, 1])
 
 mock_env = MockEnv()
 
@@ -51,6 +54,9 @@ class MockEnv_numline(object):
         Given the current state and submitted action, is it legal?
         """
         return (action == 0 or action == 1)
+
+    def get_legal_actions(self, state):
+        return np.array([0, 1])
 
 numline_env = MockEnv_numline()
 
