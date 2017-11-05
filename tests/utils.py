@@ -4,8 +4,7 @@ from tree import Node, create_new_connection
 def mock_model(state):
     return (0.5, 0.5), 1
 
-def mock_model_numline(node):
-    state = node.state
+def mock_model_numline(state):
     if state > 3:
         value = -10
         action_0_prob = 0.9

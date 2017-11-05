@@ -3,7 +3,7 @@ from functools import partial
 
 from model import LegalActionsOnlyModel
 from tree import Node, create_new_connection
-
+import pdb
 
 def exploration_bonus_for_c_puct(edge, c_puct):
     """
@@ -24,7 +24,8 @@ def select(node, exploration_bonus):
     """
     def score(edge):
         return edge.mean_action_value + exploration_bonus(edge)
-    index = np.argmax([score(edge) for edge in node.outgoing_edges])
+    scores = [score(edge) for edge in node.outgoing_edges]
+    index = np.argmax(scores)
     return node.outgoing_edges[index]
 
 
@@ -41,11 +42,13 @@ def backup(node, value):
         edge.total_action_value += value
         cur_node = edge.in_node
 
-
 def expand_node(node, model, env):
-    action_probs, value = model(node)
-    for i, action_prob in enumerate(action_probs):
-        action = i  # actions are just indexes
+    action_probs, value = model(node.state)
+    legal_actions = env.get_legal_actions(node.state)
+    action_probs = action_probs[legal_actions]
+    for i in range(legal_actions.size):
+        action = legal_actions[i]
+        action_prob = action_probs[i]
         next_state = env.get_next_state(node.state, action)
         child_node = Node(next_state)
         create_new_connection(node, child_node, action, action_prob)
@@ -89,6 +92,15 @@ def perform_rollouts(root_node,
 
         n_leaf_expansions -= 1
 
+def get_pi(node, temperature, total_num_actions):
+    visit_counts = np.array([edge.num_visits for edge in node.outgoing_edges])
+    actions = np.array([edge.action for edge in node.outgoing_edges])
+    distribution = np.power(visit_counts, 1/temperature)
+    # return distribution / np.sum(distribution), actions
+    pi = np.zeros(total_num_actions)
+    distribution = distribution / np.sum(distribution)
+    pi[actions] = distribution
+    return pi, distribution, actions
 
 def get_action_distribution(start_state,
                             temperature,

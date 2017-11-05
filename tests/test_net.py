@@ -18,6 +18,17 @@ class TestPrediction(unittest.TestCase):
         self.boards = np.random.random_sample([10, 8, 8, 13])
         self.z = np.random.random_sample([10])
 
+    def test_KQK(self):
+        self.states = np.random.random_sample([10, 8, 8, 4])
+        self.z = np.random.random_sample([10])
+        sess = tf.Session()
+        net = DualNet(sess, state_regime='KQK_conv', action_regime='KQK_pos_pos_piece')
+        sess.__enter__()
+        tf.global_variables_initializer().run()
+        policy, value = net(self.states)
+        self.assertEqual(policy.shape, (10, 64*64*3))
+        self.assertEqual(value.size, 10)
+
     def test_predict(self):
         sess = tf.Session()
         net = DualNet(sess)

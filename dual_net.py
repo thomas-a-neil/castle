@@ -1,6 +1,6 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
-
+import numpy as np
 
 # A convolutional block as described in AlphaGo Zero
 def conv_block(tensor, specs):
@@ -158,7 +158,13 @@ class DualNet(object):
         Gets a feed-forward prediction for a batch of input boards of shape set
         during initialization.
         """
-        policy, value = self.sess.run([self.policy_predict, self.value_predict],
+        if inp.ndim == 3:
+          inp = np.reshape(inp, (1, inp.shape[0], inp.shape[1], inp.shape[2]))
+          policy, value = self.sess.run([self.policy_predict, self.value_predict],
+                                      feed_dict={self.board_placeholder: inp})
+          policy = np.squeeze(policy, axis=0)
+        else:
+          policy, value = self.sess.run([self.policy_predict, self.value_predict],
                                       feed_dict={self.board_placeholder: inp})
         return policy, value
 
