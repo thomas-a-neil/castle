@@ -2,7 +2,7 @@ from tests.utils import map_xy_to_square, map_square_to_xy
 import numpy as np
 import chess
 
-class Chess_env(object):
+class ChessEnv(object):
 	def __init__(self, state_regime, action_regime):
 		self.state_regime = state_regime
 		self.action_regime = action_regime
@@ -12,7 +12,7 @@ class Chess_env(object):
 		elif action_regime == 'KQK_pos_pos':
 			self.action_dims = (8,8,8,8)
 			self.action_size = 64*64
-	"""docstring for Chess_env"""
+	"""docstring for ChessEnv"""
 	'''
 	The following 4 methods are called outside of the environment
 	'''
@@ -72,11 +72,11 @@ class Chess_env(object):
 			state = np.zeros((8, 8, 4), dtype=int)
 			for square in pieces:
 				piece = pieces[square]
-				piece = str(piece)	
+				piece = str(piece)
 				x, y = map_square_to_xy(square)
 				if piece == 'K':
 					state[x, y, 0] = 1
-				elif piece == 'Q':	
+				elif piece == 'Q':
 					state[x, y, 1] = 1
 				elif piece == 'k':
 					state[x, y, 2] = 1
@@ -115,7 +115,7 @@ class Chess_env(object):
 				piece_color = piece.color
 				if piece_type == chess.KING and piece_color == chess.WHITE:
 					action[from_x, from_y, to_x, to_y, 0] = 1
-				elif piece_type == chess.QUEEN and piece_color == chess.WHITE:	
+				elif piece_type == chess.QUEEN and piece_color == chess.WHITE:
 					action[from_x, from_y, to_x, to_y, 1] = 1
 				elif piece_type == chess.KING and piece_color == chess.BLACK:
 					action[from_x, from_y, to_x, to_y, 2] = 1
@@ -130,7 +130,7 @@ class Chess_env(object):
 				piece_color = piece.color
 				if piece_type == chess.KING and piece_color == chess.WHITE:
 					action[from_x, from_y, to_x, to_y] = 1
-				elif piece_type == chess.QUEEN and piece_color == chess.WHITE:	
+				elif piece_type == chess.QUEEN and piece_color == chess.WHITE:
 					action[from_x, from_y, to_x, to_y] = 1
 				elif piece_type == chess.KING and piece_color == chess.BLACK:
 					action[from_x, from_y, to_x, to_y] = 1
@@ -177,7 +177,5 @@ actions = {8x8x8x8x3 flattened}
 1st layer = WQ
 2nd layer = BK
 3rd layer = turn
-				
-'''
 
-		
+'''

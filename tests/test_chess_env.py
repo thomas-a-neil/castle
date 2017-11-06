@@ -1,10 +1,10 @@
 import unittest
-from chess_env import Chess_env
+from ChessEnv import ChessEnv
 import numpy as np
 
-class Test_chess_env(unittest.TestCase):
+class Test_ChessEnv(unittest.TestCase):
 	def setUp(self):
-		self.env = Chess_env('KQK_conv', 'KQK_pos_pos_piece')
+		self.env = ChessEnv('KQK_conv', 'KQK_pos_pos_piece')
 
 	def test_checkmate(self):
 		start_state = np.zeros((8,8,4), dtype=int)
@@ -53,5 +53,3 @@ class Test_chess_env(unittest.TestCase):
 		start_state[5,5,1] = 1
 		start_state[0,0,2] = 1
 		self.assertEqual(self.env.get_legal_actions(start_state).size, 1)
-
-

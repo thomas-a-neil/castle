@@ -1,5 +1,5 @@
 import unittest
-from chess_env import Chess_env
+from ChessEnv import ChessEnv
 import numpy as np
 import tensorflow as tf
 from mcts import backup, select, expand_node, exploration_bonus_for_c_puct, perform_rollouts, get_action_distribution
@@ -13,7 +13,7 @@ class Test_games(unittest.TestCase):
 	def setUp(self):
 		state_regime = 'KQK_conv'
 		action_regime = 'KQK_pos_pos_piece'
-		self.env = Chess_env(state_regime, action_regime)
+		self.env = ChessEnv(state_regime, action_regime)
 		start_state = np.zeros((8,8,4), dtype=int)
 		start_state[0,2,0] = 1
 		start_state[2,0,1] = 1
