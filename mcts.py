@@ -1,9 +1,10 @@
-import numpy as np
 from functools import partial
+
+import numpy as np
 
 from model import LegalActionsOnlyModel
 from tree import Node, create_new_connection
-import pdb
+
 
 def exploration_bonus_for_c_puct(edge, c_puct):
     """
@@ -41,6 +42,7 @@ def backup(node, value):
         edge.num_visits += 1
         edge.total_action_value += value
         cur_node = edge.in_node
+
 
 def expand_node(node, model, env):
     action_probs, value = model(node.state)
@@ -92,6 +94,7 @@ def perform_rollouts(root_node,
 
         n_leaf_expansions -= 1
 
+
 def get_pi(node, temperature, total_num_actions):
     visit_counts = np.array([edge.num_visits for edge in node.outgoing_edges])
     actions = np.array([edge.action for edge in node.outgoing_edges])
@@ -101,6 +104,7 @@ def get_pi(node, temperature, total_num_actions):
     distribution = distribution / np.sum(distribution)
     pi[actions] = distribution
     return pi, distribution, actions
+
 
 def get_action_distribution(start_state,
                             temperature,
