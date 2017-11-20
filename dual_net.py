@@ -90,20 +90,23 @@ def build_model(board_placeholder,
                                                activation_fn=specs['activation_fn'])
     return policy_out, value_out
 
+FULL_CHESS_INPUT_SHAPE = (8, 8, 13)
+KQK_CHESS_INPUT_SHAPE = (8, 8, 4)
+
+POSITION_POSITION_ACTION_SIZE = 64 * 64
+POSITION_POSITION_PIECE_ACTION_SIZE = 64 * 64 * 3
+PIECE_POSITION_ACTION_SIZE = 32 * 64
 
 class DualNet(object):
 
-    def __init__(self, sess, learning_rate=0.01, representation=None,
+    def __init__(self, sess, learning_rate=0.01,
                  regularization_mult=0.01, n_residual_layers=2,
-                 input_shape=(8, 8, 13),
-                 action_size=64*64,
+                 input_shape=FULL_CHESS_INPUT_SHAPE,
+                 action_size=POSITION_POSITION_ACTION_SIZE,
                  num_convolutional_filters=256
                  ):
         """
         sess: tensorflow session
-        representation: 'pos' for (pos1, pos2) action representation,
-                        'piece' for (piece, pos) rep. If not None, will override
-                        action_size.
         learning_rate: learning rate for gradient descent
         regularization_mult: multiplier for weight regularization loss
         n_residual_layers: how many residual layers to add, as described in
@@ -113,11 +116,6 @@ class DualNet(object):
         num_convolutional_filters: how many convolutional filters to have in
                                    each convolutional layer
         """
-        if representation == 'pos':
-            action_size = 64*64
-        elif representation == 'piece':
-            action_size = 32*64
-
         self.board_placeholder = tf.placeholder(tf.float32, [None] + list(input_shape))
 
         shared_layers = [{'layer': 'conv', 'num_outputs':
@@ -157,7 +155,8 @@ class DualNet(object):
 
     def __call__(self, inp):
         """
-        Gets a feed-forward prediction for a batch of input boards of shape [None, 8, 8, 13]
+        Gets a feed-forward prediction for a batch of input boards of shape set
+        during initialization.
         """
         policy, value = self.sess.run([self.policy_predict, self.value_predict],
                                       feed_dict={self.board_placeholder: inp})
