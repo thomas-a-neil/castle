@@ -75,6 +75,7 @@ def build_model(board_placeholder,
             policy_out = layers.fully_connected(policy_out,
                                                 num_outputs=specs['num_outputs'],
                                                 activation_fn=specs['activation_fn'])
+
     policy_out = tf.nn.log_softmax(policy_out)
 
     # Value head
@@ -92,10 +93,10 @@ def build_model(board_placeholder,
 
 class DualNet(object):
 
-    def __init__(self, sess, learning_rate=0.01, representation=None
+    def __init__(self, sess, learning_rate=0.01, representation=None,
                  regularization_mult=0.01, n_residual_layers=2,
                  input_shape=(8, 8, 13),
-                 action_size=64*64
+                 action_size=64*64,
                  num_convolutional_filters=256
                  ):
         """
@@ -145,10 +146,7 @@ class DualNet(object):
                                                               policy_head=policy_layers,
                                                               value_head=value_layers)
         self.z = tf.placeholder(tf.float32, [None])
-        if representation == 'pos':
-            self.pi = tf.placeholder(tf.float32, [None, action_size])
-        elif representation == 'piece':
-            self.pi = tf.placeholder(tf.float32, [None, action_size])
+        self.pi = tf.placeholder(tf.float32, [None, action_size])
         self.value_loss = tf.reduce_sum(tf.square(self.value_predict - self.z))
         self.policy_loss = tf.reduce_sum(tf.multiply(self.pi, self.policy_predict))
         self.regularization_loss = layers.apply_regularization(layers.l2_regularizer(regularization_mult),
