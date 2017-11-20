@@ -75,6 +75,7 @@ def build_model(board_placeholder,
             policy_out = layers.fully_connected(policy_out,
                                                 num_outputs=specs['num_outputs'],
                                                 activation_fn=specs['activation_fn'])
+
     policy_out = tf.nn.log_softmax(policy_out)
 
     # Value head
@@ -89,29 +90,53 @@ def build_model(board_placeholder,
                                                activation_fn=specs['activation_fn'])
     return policy_out, value_out
 
+FULL_CHESS_INPUT_SHAPE = (8, 8, 13)
+KQK_CHESS_INPUT_SHAPE = (8, 8, 4)
+
+POSITION_POSITION_ACTION_SIZE = 64 * 64
+POSITION_POSITION_PIECE_ACTION_SIZE = 64 * 64 * 3
+PIECE_POSITION_ACTION_SIZE = 32 * 64
 
 class DualNet(object):
 
-    def __init__(self, sess, representation='pos', learning_rate=0.01, regularization_mult=0.01, n_residual_layers=2):
+    def __init__(self, sess, learning_rate=0.01,
+                 regularization_mult=0.01, n_residual_layers=2,
+                 input_shape=FULL_CHESS_INPUT_SHAPE,
+                 action_size=POSITION_POSITION_ACTION_SIZE,
+                 num_convolutional_filters=256
+                 ):
         """
         sess: tensorflow session
-        representation: 'pos' for (pos1, pos2) action representation, 'piece' for (piece, pos) rep
         learning_rate: learning rate for gradient descent
         regularization_mult: multiplier for weight regularization loss
+        n_residual_layers: how many residual layers to add, as described in
+                           AlphaGo Zero.
+        input_shape: a tuple describing the state input shape
+        action_size: int describing size of action space
+        num_convolutional_filters: how many convolutional filters to have in
+                                   each convolutional layer
         """
-        self.board_placeholder = tf.placeholder(tf.float32, [None, 8, 8, 13])
-        shared_layers = [{'layer': 'conv', 'num_outputs': 256, 'stride': 3, 'kernel_size': 1, 'activation_fn': tf.nn.relu}]
+        self.board_placeholder = tf.placeholder(tf.float32, [None] + list(input_shape))
+
+        shared_layers = [{'layer': 'conv', 'num_outputs':
+                          num_convolutional_filters, 'stride': 3,
+                          'kernel_size': 1, 'activation_fn': tf.nn.relu}]
         # add n_residual_layers to the shared layers
-        shared_layers += n_residual_layers*[{'layer': 'residual', 'num_outputs': 256, 'stride': 1, 'kernel_size': 3, 'activation_fn': tf.nn.relu}]
-        if representation == 'pos':
-            policy_layers = [{'layer': 'conv', 'num_outputs': 2, 'stride': 1, 'kernel_size': 1, 'activation_fn': tf.nn.relu},
-                             {'layer': 'fc', 'num_outputs': 64*64, 'activation_fn': None}]
-        elif representation == 'piece':
-            policy_layers = [{'layer': 'conv', 'num_outputs': 2, 'stride': 1, 'kernel_size': 1, 'activation_fn': tf.nn.relu},
-                             {'layer': 'fc', 'num_outputs': 32*64, 'activation_fn': None}]
-        value_layers = [{'layer': 'conv', 'num_outputs': 1, 'stride': 1, 'kernel_size': 1, 'activation_fn': tf.nn.relu},
-                        {'layer': 'fc', 'num_outputs': 256, 'activation_fn': tf.nn.relu},
-                        {'layer': 'fc', 'num_outputs': 1, 'activation_fn': tf.nn.tanh}]
+        shared_layers += n_residual_layers*[{'layer': 'residual',
+                                             'num_outputs': num_convolutional_filters,
+                                             'stride': 1, 'kernel_size': 3,
+                                             'activation_fn': tf.nn.relu}]
+
+        policy_layers = [{'layer': 'conv', 'num_outputs': 2, 'stride': 1,
+                          'kernel_size': 1, 'activation_fn': tf.nn.relu},
+                         {'layer': 'fc', 'num_outputs': action_size,
+                          'activation_fn': None}]
+        value_layers = [{'layer': 'conv', 'num_outputs': 1, 'stride': 1,
+                         'kernel_size': 1, 'activation_fn': tf.nn.relu},
+                        {'layer': 'fc', 'num_outputs': num_convolutional_filters,
+                         'activation_fn': tf.nn.relu},
+                        {'layer': 'fc', 'num_outputs': 1,
+                         'activation_fn': tf.nn.tanh}]
 
         self.policy_predict, self.value_predict = build_model(self.board_placeholder,
                                                               scope='net',
@@ -119,10 +144,7 @@ class DualNet(object):
                                                               policy_head=policy_layers,
                                                               value_head=value_layers)
         self.z = tf.placeholder(tf.float32, [None])
-        if representation == 'pos':
-            self.pi = tf.placeholder(tf.float32, [None, 64*64])
-        elif representation == 'piece':
-            self.pi = tf.placeholder(tf.float32, [None, 32*64])
+        self.pi = tf.placeholder(tf.float32, [None, action_size])
         self.value_loss = tf.reduce_sum(tf.square(self.value_predict - self.z))
         self.policy_loss = tf.reduce_sum(tf.multiply(self.pi, self.policy_predict))
         self.regularization_loss = layers.apply_regularization(layers.l2_regularizer(regularization_mult),
@@ -133,7 +155,8 @@ class DualNet(object):
 
     def __call__(self, inp):
         """
-        Gets a feed-forward prediction for a batch of input boards of shape [None, 8, 8, 12]
+        Gets a feed-forward prediction for a batch of input boards of shape set
+        during initialization.
         """
         policy, value = self.sess.run([self.policy_predict, self.value_predict],
                                       feed_dict={self.board_placeholder: inp})
@@ -141,9 +164,9 @@ class DualNet(object):
 
     def train(self, boards, pi, z):
         """
-        Performs one step of gradient descent based on a batch of input boards of
-        shape [None, 8, 8, 13], MCTS policy of shape [None, 64^2, 1] or [None, 36*64, 1], reward of
-        shape [None, 1]
+        Performs one step of gradient descent based on a batch of input boards,
+        MCTS policies, and rewards of shape [None, 1].  Shapes of inputs and policies
+        should match input_shape and action_size as set during initialization.
         returns the batch loss
         """
         self.sess.run([self.update_op], feed_dict={self.board_placeholder: boards,
