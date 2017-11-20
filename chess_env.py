@@ -5,6 +5,10 @@ from tests.utils import map_xy_to_square, map_square_to_xy
 
 
 class ChessEnv(object):
+    """
+    A simplified chess environment where one king faces off against
+    a king and queen on an 8x8 board
+    """
     def __init__(self, state_regime, action_regime):
         self.state_regime = state_regime
         self.action_regime = action_regime
@@ -14,7 +18,6 @@ class ChessEnv(object):
         elif action_regime == 'KQK_pos_pos':
             self.action_dims = (8, 8, 8, 8)
             self.action_size = 64*64
-    """docstring for ChessEnv"""
 
     # The following 4 methods are called outside of the environment
     def get_next_state(self, state, action):

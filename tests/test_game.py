@@ -14,9 +14,23 @@ class TestGame(unittest.TestCase):
         action_regime = 'KQK_pos_pos_piece'
         self.env = ChessEnv(state_regime, action_regime)
         start_state = np.zeros(KQK_CHESS_INPUT_SHAPE, dtype=int)
+
+        # White King
         start_state[0, 2, 0] = 1
+        # White Queen
         start_state[2, 0, 1] = 1
+        # Black King
         start_state[3, 3, 2] = 1
+        # initial board state:
+        # . . . . . . . .
+        # . . . . . . . .
+        # . . . . . . . .
+        # . . . . . . . .
+        # . . . k . . . .
+        # K . . . . . . .
+        # . . . . . . . .
+        # . . Q . . . . .
+
         self.start_state = start_state
         sess = tf.Session()
         self.network = DualNet(sess, input_shape=KQK_CHESS_INPUT_SHAPE, action_size=POSITION_POSITION_PIECE_ACTION_SIZE)
