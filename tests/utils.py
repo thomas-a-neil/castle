@@ -17,7 +17,7 @@ def mock_model_numline(state):
     else:
         value = 0
         action_0_prob = 0.1
-    return np.array([action_0_prob, 1 - action_0_prob]), state
+    return np.array([action_0_prob, 1 - action_0_prob]), value
 
 
 class MockEnv(object):
@@ -83,12 +83,12 @@ def setup_simple_tree():
 
 
 def setup_uneven_tree():
-    #        0
-    #    1        2
-    #  3    4  5     6
-    # 7 8              9
-    #10
-    #11
+    #          0
+    #     1        2
+    #   3   4    5   6
+    #  7 8             9
+    # 10
+    # 11
     nodes = [Node(i) for i in range(12)]
     for i in range(3):
         action = 0
@@ -105,10 +105,10 @@ def setup_uneven_tree():
     nodes[3].add_edge_do_background_work(nodes[7], 0, 0.2)
     nodes[3].add_edge_do_background_work(nodes[8], 1, 0.8)
 
-    # # 6->9
+    # 6->9
     nodes[6].add_edge_do_background_work(nodes[9], 0, 1.0)
 
-    # #7->10
+    # 7->10
     nodes[7].add_edge_do_background_work(nodes[10], 1, 1.0)
     return nodes
 
