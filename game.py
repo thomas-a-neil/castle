@@ -6,24 +6,6 @@ from mcts import exploration_bonus_for_c_puct, perform_rollouts, get_pi
 from tree import Node
 
 
-class Grandmaster(object):
-    """docstring for Grandmaster"""
-    def __init__(self, model, env, num_games, n_leaf_expansions):
-        self.model = model
-        self.num_games = num_games
-        self.env = env
-        self.start_state = 0
-        self.n_leaf_expansions = n_leaf_expansions
-        self.c = 100
-        self.temperature = 1
-
-    def become_grandmaster():
-        for i in range(self.num_games):
-            new_game = Game()
-            s, v, pi = new_game.self_play(self.model, self.env, self.start_state, self.n_leaf_expansions, self.c)
-            model.train(s, pi, z)
-
-
 class Game(object):
     """docstring for Game"""
     def self_play(self, model, env, start_state, n_leaf_expansions, c_puct, temperature):

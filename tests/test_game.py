@@ -5,7 +5,7 @@ import tensorflow as tf
 
 from chess_env import ChessEnv
 from dual_net import DualNet
-from grandmaster import Game
+from game import Game
 
 
 class TestGame(unittest.TestCase):
