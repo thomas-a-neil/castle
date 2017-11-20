@@ -14,10 +14,10 @@ class ChessEnv(object):
         self.action_regime = action_regime
         if action_regime == 'KQK_pos_pos_piece':
             self.action_dims = (8, 8, 8, 8, 3)
-            self.action_size = 64*64*3
+            self.action_size = np.prod(self.action_dims)
         elif action_regime == 'KQK_pos_pos':
             self.action_dims = (8, 8, 8, 8)
-            self.action_size = 64*64
+            self.action_size = np.prod(self.action_dims)
 
     # The following 4 methods are called outside of the environment
     def get_next_state(self, state, action):
@@ -51,6 +51,9 @@ class ChessEnv(object):
         elif board.result() == '0-1':
             result = -1
         return result
+
+    def is_legal(self, state, action):
+        return action in self.get_legal_actions(state)
 
     def print_board(self, state):
         board = self._map_state_to_board(state)
