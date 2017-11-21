@@ -1,6 +1,13 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
-import numpy as np
+
+FULL_CHESS_INPUT_SHAPE = (8, 8, 13)
+KQK_CHESS_INPUT_SHAPE = (8, 8, 4)
+
+POSITION_POSITION_ACTION_SIZE = 64 * 64
+POSITION_POSITION_PIECE_ACTION_SIZE = 64 * 64 * 3
+PIECE_POSITION_ACTION_SIZE = 32 * 64
+
 
 # A convolutional block as described in AlphaGo Zero
 def conv_block(tensor, specs):
@@ -90,12 +97,6 @@ def build_model(board_placeholder,
                                                activation_fn=specs['activation_fn'])
     return policy_out, value_out
 
-FULL_CHESS_INPUT_SHAPE = (8, 8, 13)
-KQK_CHESS_INPUT_SHAPE = (8, 8, 4)
-
-POSITION_POSITION_ACTION_SIZE = 64 * 64
-POSITION_POSITION_PIECE_ACTION_SIZE = 64 * 64 * 3
-PIECE_POSITION_ACTION_SIZE = 32 * 64
 
 class DualNet(object):
 
@@ -158,13 +159,7 @@ class DualNet(object):
         Gets a feed-forward prediction for a batch of input boards of shape set
         during initialization.
         """
-        if inp.ndim == 3:
-          inp = np.reshape(inp, (1, inp.shape[0], inp.shape[1], inp.shape[2]))
-          policy, value = self.sess.run([self.policy_predict, self.value_predict],
-                                      feed_dict={self.board_placeholder: inp})
-          policy = np.squeeze(policy, axis=0)
-        else:
-          policy, value = self.sess.run([self.policy_predict, self.value_predict],
+        policy, value = self.sess.run([self.policy_predict, self.value_predict],
                                       feed_dict={self.board_placeholder: inp})
         return policy, value
 
