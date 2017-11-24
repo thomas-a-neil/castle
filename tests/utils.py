@@ -4,7 +4,7 @@ from tree import Node, create_new_connection
 
 
 def mock_model(state):
-    return np.array([0.5, 0.5]), 1
+    return [[np.array([0.5, 0.5]), np.array([1])]]
 
 
 def mock_model_numline(state):
@@ -17,7 +17,7 @@ def mock_model_numline(state):
     else:
         value = 0
         action_0_prob = 0.1
-    return np.array([action_0_prob, 1 - action_0_prob]), value
+    return [[np.array([action_0_prob, 1 - action_0_prob]), np.array([value])]]
 
 
 class MockEnv(object):
@@ -43,9 +43,9 @@ class MockEnv(object):
 mock_env = MockEnv()
 
 
-class MockEnv_numline(object):
+class NumlineEnv(object):
     """
-    Functionality for the environment
+    A simple numline environment where an agent can move left or right
     """
     def get_next_state(self, start_state, action):
         """
@@ -63,7 +63,7 @@ class MockEnv_numline(object):
     def get_legal_actions(self, state):
         return np.array([0, 1])
 
-numline_env = MockEnv_numline()
+numline_env = NumlineEnv()
 
 
 def setup_simple_tree():

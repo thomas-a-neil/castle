@@ -70,6 +70,7 @@ class TestMCTS(unittest.TestCase):
         self.assertEqual(value, 1)
         self.assertEqual(len(self.nodes[6].outgoing_edges), 2)
         next_states = np.array([edge.out_node.state for edge in self.nodes[6].outgoing_edges])
+        # should probably be assertitemsequals
         self.assertTrue(np.array_equal(next_states, np.array([[13], [14]])) or np.array_equal(next_states, np.array([[14], [13]])))
 
 
@@ -85,6 +86,16 @@ class TestRollouts(unittest.TestCase):
         self.assertEquals(edge1.num_visits, 1)
 
     def test_numline_rollouts(self):
+        """
+        This is a simple numberline environment with 2 discrete actions: left and right.  The start state is zero.
+        The agent gets reward of 10 at locations 2 and 3, reward of -10 from 4 onwards, and 0 on 1 and to the left
+        The environment (luckily) pushes actions that are likely to help it achieve its reward based on its state
+
+        The agent should explore the first action being to the right more than being to the left.  The same thing
+        applies for the second action since that's when it will really hit its reward.
+        But the 5th move should be to the left because it has gone off the cliff
+        """
+
         root_node = Node(0)
         n_leaf_expansions = 100
         c = 100  # to make sure we explore a new path every time
@@ -96,15 +107,6 @@ class TestRollouts(unittest.TestCase):
         edge1110, edge1111 = edge111.out_node.outgoing_edges
         edge11110, edge11111 = edge1111.out_node.outgoing_edges
 
-        '''
-        This is a simple numberline environment with 2 discrete actions: left and right.  The start state is zero.
-        The agent gets reward of 10 at locations 2 and 3, reward of -10 from 4 onwards, and 0 on 1 and to the left
-        The environment (luckily) pushes actions that are likely to help it achieve its reward based on its state
-
-        The agent should explore the first action being to the right more than being to the left.  The same thing applies
-        for the second action since that's when it will really hit its reward.
-        But the 5th move should be to the left because it has gone off the cliff
-        '''
         self.assertTrue(edge0.num_visits < edge1.num_visits)
         self.assertTrue(edge10.num_visits < edge11.num_visits)
         self.assertTrue(edge11110.num_visits > edge11111.num_visits)

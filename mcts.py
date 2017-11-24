@@ -2,7 +2,6 @@ from functools import partial
 
 import numpy as np
 
-from model import LegalActionsOnlyModel
 from tree import Node, create_new_connection
 
 
@@ -45,16 +44,22 @@ def backup(node, value):
 
 
 def expand_node(node, model, env):
-    action_probs, value = model(node.state)
+    """
+    For all legal actions possible from a node, create and connect edges
+    to subsequent states. Returns the value of the current state as
+    calculated by the model.
+    """
+    # need to take [0] index since we're only putting in one state
+    action_probs, value = model(node.state)[0]
     legal_actions = env.get_legal_actions(node.state)
-    action_probs = action_probs[legal_actions]
     for i in range(legal_actions.size):
         action = legal_actions[i]
         action_prob = action_probs[i]
         next_state = env.get_next_state(node.state, action)
         child_node = Node(next_state)
         create_new_connection(node, child_node, action, action_prob)
-    return value
+    # need to take [0] index of value since value is an array of dimension 1
+    return value[0]
 
 
 def perform_rollouts(root_node,
@@ -71,7 +76,7 @@ def perform_rollouts(root_node,
         number of leaves to expand in each iteration of MCTS when picking an action
     model: function
         Model to use for computing the value of each state,
-        prob_vector, value = model(node.state, env)
+        prob_vector, value = model(node.state)
     env:
         game playing environment that can progress game state and give us legal moves
     exploration_bonus: function
@@ -93,17 +98,6 @@ def perform_rollouts(root_node,
         backup(cur_node, value)
 
         n_leaf_expansions -= 1
-
-
-def get_pi(node, temperature, total_num_actions):
-    visit_counts = np.array([edge.num_visits for edge in node.outgoing_edges])
-    actions = np.array([edge.action for edge in node.outgoing_edges])
-    distribution = np.power(visit_counts, 1/temperature)
-    # return distribution / np.sum(distribution), actions
-    pi = np.zeros(total_num_actions)
-    distribution = distribution / np.sum(distribution)
-    pi[actions] = distribution
-    return pi, distribution, actions
 
 
 def get_action_distribution(start_state,
@@ -136,7 +130,6 @@ def get_action_distribution(start_state,
     # set up the exploration_bonus function with the constant specified
     exploration_bonus = partial(exploration_bonus_for_c_puct, c_puct=c_puct)
 
-    model = LegalActionsOnlyModel(model, env)
     root_node = Node(start_state)
     perform_rollouts(root_node, n_leaf_expansions, model, env, exploration_bonus)
     visit_counts = np.array([edge.num_visits for edge in root_node.outgoing_edges])
