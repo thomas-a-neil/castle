@@ -5,7 +5,7 @@ import tensorflow as tf
 
 from chess_env import ChessEnv
 from dual_net import DualNet, KQK_CHESS_INPUT_SHAPE, KQK_POSITION_POSITION_PIECE_ACTION_SIZE
-from game import Game
+from game import self_play_game
 
 from utils import numline_env, mock_model_numline
 
@@ -16,11 +16,10 @@ class TestNumlineGame(unittest.TestCase):
         model = mock_model_numline
         env = numline_env
 
-        game = Game()
         n_leaf_expansions = 10
         c_puct = 1000
         temperature = 1
-        states, v, pi = game.self_play(model,
+        states, v, pi = self_play_game(model,
                                        env,
                                        start_state,
                                        n_leaf_expansions,
@@ -54,16 +53,17 @@ class TestChessGame(unittest.TestCase):
 
         self.start_state = start_state
         sess = tf.Session()
-        self.network = DualNet(sess, input_shape=KQK_CHESS_INPUT_SHAPE, action_size=KQK_POSITION_POSITION_PIECE_ACTION_SIZE)
+        self.network = DualNet(sess,
+                               input_shape=KQK_CHESS_INPUT_SHAPE,
+                               action_size=KQK_POSITION_POSITION_PIECE_ACTION_SIZE)
         sess.__enter__()
         tf.global_variables_initializer().run()
 
     def test_simulate_game(self):
-        game = Game()
         n_leaf_expansions = 10
         c_puct = 1000
         temperature = 1
-        states, v, pi = game.self_play(self.network,
+        states, v, pi = self_play_game(self.network,
                                        self.env,
                                        self.start_state,
                                        n_leaf_expansions,
