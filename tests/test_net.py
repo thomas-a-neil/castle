@@ -77,7 +77,7 @@ class TestPrediction(unittest.TestCase):
 
         uci_move = chess.Move.from_uci('a2a3')
         index = move_to_index(uci_move)
-        self.assertEqual(index, 74)
+        self.assertEqual(index, 528)
 
 
 if __name__ == '__main__':
