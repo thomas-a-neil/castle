@@ -1,7 +1,7 @@
-import numpy as np
 from functools import partial
 
-from model import LegalActionsOnlyModel
+import numpy as np
+
 from tree import Node, create_new_connection
 
 
@@ -24,7 +24,8 @@ def select(node, exploration_bonus):
     """
     def score(edge):
         return edge.mean_action_value + exploration_bonus(edge)
-    index = np.argmax([score(edge) for edge in node.outgoing_edges])
+    scores = [score(edge) for edge in node.outgoing_edges]
+    index = np.argmax(scores)
     return node.outgoing_edges[index]
 
 
@@ -43,13 +44,24 @@ def backup(node, value):
 
 
 def expand_node(node, model, env):
-    action_probs, value = model(node)
-    for i, action_prob in enumerate(action_probs):
-        action = i  # actions are just indexes
+    """
+    For all legal actions possible from a node, create and connect edges
+    to subsequent states. Returns the value of the current state as
+    calculated by the model.
+    """
+    vec_action_probs, values = model(np.array([node.state]))
+    # need to take [0] index since we're only putting in one state
+    action_probs = vec_action_probs[0]
+    value = values[0]
+    legal_actions = env.get_legal_actions(node.state)
+    for i in range(legal_actions.size):
+        action = legal_actions[i]
+        action_prob = action_probs[i]
         next_state = env.get_next_state(node.state, action)
         child_node = Node(next_state)
         create_new_connection(node, child_node, action, action_prob)
-    return value
+    # need to take [0] index of value since value is an array of dimension 1
+    return value[0]
 
 
 def perform_rollouts(root_node,
@@ -66,7 +78,7 @@ def perform_rollouts(root_node,
         number of leaves to expand in each iteration of MCTS when picking an action
     model: function
         Model to use for computing the value of each state,
-        prob_vector, value = model(node.state, env)
+        prob_vector, value = model(node.state)
     env:
         game playing environment that can progress game state and give us legal moves
     exploration_bonus: function
@@ -120,10 +132,19 @@ def get_action_distribution(start_state,
     # set up the exploration_bonus function with the constant specified
     exploration_bonus = partial(exploration_bonus_for_c_puct, c_puct=c_puct)
 
-    model = LegalActionsOnlyModel(model, env)
     root_node = Node(start_state)
     perform_rollouts(root_node, n_leaf_expansions, model, env, exploration_bonus)
     visit_counts = np.array([edge.num_visits for edge in root_node.outgoing_edges])
+
+    # scale by temperature
     distribution = np.power(visit_counts, 1/temperature)
     # normalize
-    return distribution / np.sum(distribution)
+    distribution = distribution / np.sum(distribution)
+
+    # our distribution is only over legal actions, some subset of the action space
+    # all illegal actions have zero probability due to being unexplored
+    total_action_distribution = np.zeros(env.action_size)
+    action_indexes = [edge.action for edge in root_node.outgoing_edges]
+    total_action_distribution[action_indexes] = distribution
+
+    return total_action_distribution
