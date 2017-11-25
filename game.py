@@ -47,7 +47,6 @@ class Game(object):
             states.append(state)
             action_distributions.append(distribution)
 
-            # import pdb; pdb.set_trace()
             chosen_action = np.random.choice(np.arange(env.action_size), p=distribution)
             state = env.get_next_state(state, chosen_action)
 
