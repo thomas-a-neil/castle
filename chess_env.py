@@ -8,6 +8,26 @@ class ChessEnv(object):
     """
     A simplified chess environment where one king faces off against
     a king and queen on an 8x8 board
+
+    Description of different regimes
+
+    REGIME 1: 'state_regime = KQK_conv AND action_regime = KQK_pos_pos'
+
+    states = {4x8x8}
+    actions = {8x8x8x8}
+    0th layer = WK
+    1st layer = WQ
+    2nd layer = BK
+    3rd layer = turn
+
+    REGIME 2: 'state_regime = KQK_conv AND action_regime = KQK_pos_pos_piece'
+
+    states = {4x8x8}
+    actions = {8x8x8x8x3 flattened}
+    0th layer = WK
+    1st layer = WQ
+    2nd layer = BK
+    3rd layer = turn
     """
     def __init__(self, state_regime, action_regime):
         self.state_regime = state_regime
@@ -51,9 +71,6 @@ class ChessEnv(object):
         elif board.result() == '0-1':
             result = -1
         return result
-
-    def is_legal(self, state, action):
-        return action in self.get_legal_actions(state)
 
     def board_str(self, state):
         board = self._map_state_to_board(state)
@@ -124,8 +141,8 @@ class ChessEnv(object):
                     action[from_x, from_y, to_x, to_y, 1] = 1
                 elif piece_type == chess.KING and piece_color == chess.BLACK:
                     action[from_x, from_y, to_x, to_y, 2] = 1
-                # action = np.reshape(action, 8*8*8*8*3)
                 return self.convert_action_to_int(action)
+
             elif self.action_regime == 'KQK_pos_pos':
                 action = np.zeros((8, 8, 8, 8))
                 from_x, from_y = map_square_to_xy(move.from_square)
@@ -139,13 +156,12 @@ class ChessEnv(object):
                     action[from_x, from_y, to_x, to_y] = 1
                 elif piece_type == chess.KING and piece_color == chess.BLACK:
                     action[from_x, from_y, to_x, to_y] = 1
-                # action = np.reshape(action, 8*8*8*8)
                 return self.convert_action_to_int(action)
 
     def _map_action_to_move(self, state, action):
         if self.state_regime == 'KQK_conv':
             if self.action_regime == 'KQK_pos_pos_piece':
-                # action = np.reshape(action, (8,8,8,8,3))
+
                 action_array = self.convert_int_to_action(action)
                 # dont need to find the piece
                 # should have exactly location of value 1 and everything else 0
@@ -159,27 +175,3 @@ class ChessEnv(object):
                 from_square = map_xy_to_square(from_x, from_y)
                 to_square = map_xy_to_square(to_x, to_y)
                 return chess.Move(from_square, to_square)
-
-
-'''
-Description of different regimes
-
-REGIME 1: 'state_regime = KQK_conv AND action_regime = KQK_pos_pos'
-
-states = {4x8x8}
-actions = {8x8x8x8}
-0th layer = WK
-1st layer = WQ
-2nd layer = BK
-3rd layer = turn
-
-REGIME 2: 'state_regime = KQK_conv AND action_regime = KQK_pos_pos_piece'
-
-states = {4x8x8}
-actions = {8x8x8x8x3 flattened}
-0th layer = WK
-1st layer = WQ
-2nd layer = BK
-3rd layer = turn
-
-'''
