@@ -108,6 +108,32 @@ class ChessEnv(object):
             board.set_piece_map(pieces)
             board.turn = state[0, 0, 3]
             return board
+        else:
+            index_to_piece_map = {0: chess.KING, 6: chess.KING,
+                                  1: chess.QUEEN, 7: chess.QUEEN,
+                                  2: chess.ROOK, 8: chess.ROOK,
+                                  3: chess.BISHOP, 9: chess.BISHOP,
+                                  4: chess.KNIGHT, 10: chess.KNIGHT,
+                                  5: chess.PAWN, 11: chess.PAWN}
+            pieces = {}
+            for i in range(12):
+                piece = index_to_piece_map[i]
+                if i < 6:
+                    color = chess.WHITE
+                else:
+                    color = chess.BLACK
+                indices = np.argwhere(state[:, :, i] == 1)
+                squares = []
+                for x, y in indices:
+                    squares.append(map_xy_to_square(x, y))
+                for square in squares:
+                    pieces[square] = chess.Piece(piece, color)
+            board = chess.Board()
+            board.set_piece_map(pieces)
+            board.turn = state[0, 0, 12]
+
+
+
 
     def _map_move_to_action(self, board, move):
         if self.state_regime == 'KQK_conv':
