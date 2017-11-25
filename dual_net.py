@@ -5,7 +5,7 @@ FULL_CHESS_INPUT_SHAPE = (8, 8, 13)
 KQK_CHESS_INPUT_SHAPE = (8, 8, 4)
 
 POSITION_POSITION_ACTION_SIZE = 64 * 64
-POSITION_POSITION_PIECE_ACTION_SIZE = 64 * 64 * 3
+KQK_POSITION_POSITION_PIECE_ACTION_SIZE = 64 * 64 * 3
 PIECE_POSITION_ACTION_SIZE = 32 * 64
 
 
@@ -100,8 +100,11 @@ def build_model(board_placeholder,
 
 class DualNet(object):
 
-    def __init__(self, sess, learning_rate=0.01,
-                 regularization_mult=0.01, n_residual_layers=2,
+    def __init__(self,
+                 sess,
+                 learning_rate=0.01,
+                 regularization_mult=0.01,
+                 n_residual_layers=2,
                  input_shape=FULL_CHESS_INPUT_SHAPE,
                  action_size=POSITION_POSITION_ACTION_SIZE,
                  num_convolutional_filters=256
