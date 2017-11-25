@@ -7,6 +7,7 @@ from dual_net import (
     DualNet,
     move_to_index,
     board_to_state,
+    state_to_board,
     PIECE_POSITION_ACTION_SIZE,
     KQK_POSITION_POSITION_PIECE_ACTION_SIZE,
     KQK_CHESS_INPUT_SHAPE)
@@ -43,6 +44,11 @@ class TestPrediction(unittest.TestCase):
         # Checks top two rows of the black pawn layer
         self.assertEqual(str(state[0:2,:,11]), '[[ 0.  0.  0.  0.  0.  0.  0.  0.]\n [ 1.  1.  1.  1.  1.  1.  1.  1.]]')
 
+    def test_state_to_board(self):
+        board = chess.Board()
+        state = board_to_state(board)
+        new_board = state_to_board(state)
+        self.assertEqual(str(new_board), str(board))
 
     def test_predict(self):
         policy, value = self.net(self.boards)
