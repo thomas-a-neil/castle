@@ -46,12 +46,6 @@ class MockEnv(object):
         """
         return 2 * (start_state + 1) - 1 * action
 
-    def is_legal(self, state, action):
-        """
-        Given the current state and submitted action, is it legal?
-        """
-        return (action == 0 or action == 1)
-
     def get_legal_actions(self, state):
         return np.array([0, 1])
 
@@ -75,12 +69,6 @@ class NumlineEnv(object):
         and returns the state that results from taking that action
         """
         return start_state + (2*action - 1)
-
-    def is_legal(self, state, action):
-        """
-        Given the current state and submitted action, is it legal?
-        """
-        return (action == 0 or action == 1)
 
     def get_legal_actions(self, state):
         return np.array([0, 1])
