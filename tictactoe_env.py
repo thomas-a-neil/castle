@@ -33,7 +33,7 @@ class TicTacToeEnv(object):
                     legal_actions.append(action_int)
         return np.array(legal_actions)
 
-    def game_is_over(self, state):
+    def is_game_over(self, state):
         result = self.outcome(state)
         if result == 2:
             return 0
