@@ -51,13 +51,13 @@ class TicTacToeEnv(object):
         '''
         for turn in range(2):
             if (state[turn,0,0] == 1 and state[turn,1,1] == 1 and state[turn,2,2] == 1) or (state[turn,2,0] == 1 and state[turn,1,1] == 1 and state[turn,0,2] == 1):
-                return 1
+                return self.convert_turn_to_winner(turn)
             for i in range(3):
                 if state[turn,0,i] == 1 and state[turn,1,i] == 1 and state[turn,2,i] == 1:
-                    return 1
+                    return self.convert_turn_to_winner(turn)
             for j in range(3):
                 if state[turn,j,0] == 1 and state[turn,j,1] == 1 and state[turn,j,2] == 1:
-                    return 1
+                    return self.convert_turn_to_winner(turn)
         if state.sum() >= 9:
             return 0
         # if we reach this point, the game is not over.  return 2
@@ -103,3 +103,10 @@ class TicTacToeEnv(object):
             return 1
         else:
             return -1
+
+    def convert_turn_to_winner(self, turn):
+        return (1- turn) * 2 - 1
+
+
+
+
