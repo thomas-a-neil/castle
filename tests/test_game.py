@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 from chess_env import ChessEnv
-from dual_net import DualNet, KQK_CHESS_INPUT_SHAPE, POSITION_POSITION_PIECE_ACTION_SIZE
+from dual_net import DualNet, KQK_CHESS_INPUT_SHAPE, KQK_POSITION_POSITION_PIECE_ACTION_SIZE
 from game import Game
 
 from utils import numline_env, mock_model_numline
@@ -54,7 +54,7 @@ class TestChessGame(unittest.TestCase):
 
         self.start_state = start_state
         sess = tf.Session()
-        self.network = DualNet(sess, input_shape=KQK_CHESS_INPUT_SHAPE, action_size=POSITION_POSITION_PIECE_ACTION_SIZE)
+        self.network = DualNet(sess, input_shape=KQK_CHESS_INPUT_SHAPE, action_size=KQK_POSITION_POSITION_PIECE_ACTION_SIZE)
         sess.__enter__()
         tf.global_variables_initializer().run()
 

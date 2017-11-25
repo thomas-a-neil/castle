@@ -55,9 +55,9 @@ class ChessEnv(object):
     def is_legal(self, state, action):
         return action in self.get_legal_actions(state)
 
-    def print_board(self, state):
+    def board_str(self, state):
         board = self._map_state_to_board(state)
-        print(board)
+        return str(board)
 
     def convert_action_to_int(self, action_array):
         action_array = np.reshape(action_array, -1)
