@@ -87,11 +87,9 @@ class DualNet(object):
                          'activation_fn': tf.nn.tanh}]
 
         self.boards = None
-        self.move_indices_mask = tf.placeholder(tf.int32, [None, None, 1])
-        self.move_legality_mask = tf.placeholder(tf.bool, [None, self.action_size])
+        self.move_legality_mask = tf.placeholder(tf.float32, [None, self.action_size])
         self.policy_predict, self.value_predict = self.build_model(self.board_placeholder,
                                                               self.move_legality_mask,
-                                                              self.move_indices_mask,
                                                               scope='net',
                                                               shared_layers=shared_layers,
                                                               policy_head=policy_layers,
@@ -110,7 +108,6 @@ class DualNet(object):
     def build_model(self,
                     board_placeholder,
                     legality_mask_placeholder,
-                    legality_indices_placeholder,
                     scope,
                     shared_layers,
                     policy_head,
@@ -157,14 +154,9 @@ class DualNet(object):
                                                     num_outputs=specs['num_outputs'],
                                                     activation_fn=specs['activation_fn'])
 
-        #should only be a function of tf variables
-        #[10, 4096, 1] and [10, 20ish, 1]
-        policy_out_extra_dim = tf.reshape(policy_out, shape=(tf.shape(policy_out) + (1,)))
-        legal_move_logits = tf.gather_nd(policy_out_extra_dim, legality_indices_placeholder) #TODO not correct operation
-        normalized_legal_move_logits = tf.nn.log_softmax(legal_move_logits)#TODO only softmax over each row
-        zeros = tf.zeros([tf.shape(policy_out)[0], self.action_size])
-        policy_out = tf.where(legality_mask_placeholder, normalized_legal_move_logits, zeros) #TODO: need same dim
-
+        x = tf.exp(policy_out) * legality_mask_placeholder
+        # Needs reshape to broadcast properly 
+        policy_out = x / tf.reshape(tf.reduce_sum(x, axis=1), shape=((tf.shape(x)[0],) + (1,)))
 
         # Value head
         value_out = out
@@ -192,17 +184,13 @@ class DualNet(object):
             for move in legal_moves:
                 moves.append(move_to_index(move))
             legal_moves_as_indices.append(moves)
-        move_indices_mask = []
         move_legality_mask = np.zeros(shape=(len(boards), self.action_size))
         for i in range(len(legal_moves_as_indices)):
-            move_indices_mask.append(np.array(legal_moves_as_indices[i]))
             for move in legal_moves_as_indices[i]:
                 move_legality_mask[i, move] = 1
-        move_indices_mask = np.array(move_indices_mask)
         policy, value = self.sess.run([self.policy_predict, self.value_predict],
                                       feed_dict={self.board_placeholder: inp,
-                                                 self.move_legality_mask: move_legality_mask,
-                                                 self.move_indices_mask: move_indices_mask})
+                                                 self.move_legality_mask: move_legality_mask})
         return policy, value
 
     def train(self, boards, pi, z):
@@ -221,6 +209,7 @@ class DualNet(object):
                                                      self.z: z})
         return loss
 
+# Map from piece to layer in net input.  0-5 are white.
 INDEX_TO_PIECE_MAP = {0: chess.KING, 6: chess.KING,
                       1: chess.QUEEN, 7: chess.QUEEN,
                       2: chess.ROOK, 8: chess.ROOK,
@@ -242,6 +231,8 @@ CHAR_TO_INDEX_MAP = {'K': 0, 'k': 6,
 
 def state_to_board(state):
     """
+    Transforms a state representation according to the full Chess board input
+    into its chess Board equivalent.
     Parameters
     ----------
     state: a numpy object representing the input board
@@ -288,6 +279,17 @@ def state_to_board(state):
 
 
 def board_to_state(board):
+    """
+    Translates a chess.Board() object to an input state according to the
+    full Chess representation.  Should be moved to the chess env
+    once that exists.
+
+    Parameters
+    ----------
+    board: a chess.Board
+
+    Returns the state corresponding do the board
+    """
     board_string = str(board)
     rows = board_string.split('\n')
     state = np.zeros(shape=(8, 8, 13))
@@ -305,6 +307,7 @@ def board_to_state(board):
 
 def move_to_index(move):
     """
+    Translates a chess move to the appropriate index in the action space.
     Parameters
     ----------
     move: chess.Move instance
@@ -317,6 +320,14 @@ def move_to_index(move):
     return 64 * from_pos + to_pos
 
 def position_to_index(position):
+    """
+    Translates a position to the appropriate index in the state space.
+    Parameters
+    ----------
+    move: uci string, such as b2 or g1
+
+    Returns the index
+    """
     col = position[0]
     row = position[1]
     col_number = ord(col) - ord('a')

@@ -55,8 +55,8 @@ class TestPrediction(unittest.TestCase):
         self.assertEqual(policy.shape, (10, 64*64))
         # Check that move a1->a1 is illegal
         self.assertEqual(policy[0, 0], 0)
-        # Check that move b1->c1 is legal
-        self.assertNotEqual(policy[0, 73], 0)
+        # Check that move a2->a3 is legal
+        self.assertNotEqual(policy[0, 528], 0)
 
     def test_predict_with_piece_action(self):
         policy, value = self.piece_net(self.boards)
@@ -75,7 +75,7 @@ class TestPrediction(unittest.TestCase):
         index = move_to_index(uci_move)
         self.assertEqual(index, 1)
 
-        uci_move = chess.Move.from_uci('b1c2')
+        uci_move = chess.Move.from_uci('a2a3')
         index = move_to_index(uci_move)
         self.assertEqual(index, 74)
 
