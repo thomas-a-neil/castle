@@ -16,7 +16,7 @@ class TestChessEnv(unittest.TestCase):
         start_state[0, 0, 2] = 1
         start_state[:, :, 3] = np.zeros((8, 8))
         self.assertEqual(self.env.get_legal_actions(start_state).size, 0)
-        self.assertTrue(self.env.game_is_over(start_state))
+        self.assertTrue(self.env.is_game_over(start_state))
         self.assertEqual(self.env.outcome(start_state), 1)
 
     def test_2_moves(self):
@@ -27,7 +27,7 @@ class TestChessEnv(unittest.TestCase):
         start_state[:, :, 3] = np.ones((8, 8))
         num_legal_moves = self.env.get_legal_actions(start_state).size
         self.assertTrue(num_legal_moves > 0)
-        self.assertFalse(self.env.game_is_over(start_state))
+        self.assertFalse(self.env.is_game_over(start_state))
 
         action = np.zeros((8, 8, 8, 8, 3), dtype=int)
         action[2, 0, 7, 0, 1] = 1

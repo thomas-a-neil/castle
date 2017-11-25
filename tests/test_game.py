@@ -7,8 +7,29 @@ from chess_env import ChessEnv
 from dual_net import DualNet, KQK_CHESS_INPUT_SHAPE, POSITION_POSITION_PIECE_ACTION_SIZE
 from game import Game
 
+from utils import numline_env, mock_model_numline
 
-class TestGame(unittest.TestCase):
+
+class TestNumlineGame(unittest.TestCase):
+    def test_numline_game(self):
+        start_state = 0
+        model = mock_model_numline
+        env = numline_env
+
+        game = Game()
+        n_leaf_expansions = 10
+        c_puct = 1000
+        temperature = 1
+        states, v, pi = game.self_play(model,
+                                       env,
+                                       start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=5)
+
+
+class TestChessGame(unittest.TestCase):
     def setUp(self):
         state_regime = 'KQK_conv'
         action_regime = 'KQK_pos_pos_piece'
@@ -42,4 +63,10 @@ class TestGame(unittest.TestCase):
         n_leaf_expansions = 10
         c_puct = 1000
         temperature = 1
-        states, v, pi = game.self_play(self.network, self.env, self.start_state, n_leaf_expansions, c_puct, temperature)
+        states, v, pi = game.self_play(self.network,
+                                       self.env,
+                                       self.start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=5)

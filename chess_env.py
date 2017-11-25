@@ -38,7 +38,7 @@ class ChessEnv(object):
             i += 1
         return legal_actions
 
-    def game_is_over(self, state):
+    def is_game_over(self, state):
         board = self._map_state_to_board(state)
         return board.is_game_over()
 

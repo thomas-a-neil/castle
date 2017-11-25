@@ -3,27 +3,42 @@ import numpy as np
 from tree import Node, create_new_connection
 
 
-def mock_model(state):
-    return [[np.array([0.5, 0.5]), np.array([1])]]
+def mock_model(states):
+    action_probs = []
+    values = []
+    for i in range(len(states)):
+        action_probs.append(np.array([0.5, 0.5]))
+        values.append(np.array([1]))
+
+    return (np.array(action_probs), np.array(values))
 
 
-def mock_model_numline(state):
-    if state > 3:
-        value = -10
-        action_0_prob = 0.9
-    elif state > 1:
-        value = 10
-        action_0_prob = 0.5
-    else:
-        value = 0
-        action_0_prob = 0.1
-    return [[np.array([action_0_prob, 1 - action_0_prob]), np.array([value])]]
+def mock_model_numline(states):
+    action_probs = []
+    values = []
+    for state in states:
+        if state > 3:
+            value = -10
+            action_0_prob = 0.9
+        elif state > 1:
+            value = 10
+            action_0_prob = 0.5
+        else:
+            value = 0
+            action_0_prob = 0.1
+        action_probs.append(np.array([action_0_prob, 1 - action_0_prob]))
+        values.append(np.array([value]))
+    return (np.array(action_probs), np.array(values))
 
 
 class MockEnv(object):
     """
     Functionality for the environment
     """
+    @property
+    def action_size(self):
+        return 2
+
     def get_next_state(self, start_state, action):
         """
         Takes a state, action pair (indexes in the discrete case)
@@ -40,6 +55,9 @@ class MockEnv(object):
     def get_legal_actions(self, state):
         return np.array([0, 1])
 
+    def is_game_over(self, state):
+        return False
+
 mock_env = MockEnv()
 
 
@@ -47,6 +65,10 @@ class NumlineEnv(object):
     """
     A simple numline environment where an agent can move left or right
     """
+    @property
+    def action_size(self):
+        return 2
+
     def get_next_state(self, start_state, action):
         """
         Takes a state, action pair (indexes in the discrete case)
@@ -62,6 +84,9 @@ class NumlineEnv(object):
 
     def get_legal_actions(self, state):
         return np.array([0, 1])
+
+    def is_game_over(self, state):
+        return False
 
 numline_env = NumlineEnv()
 
