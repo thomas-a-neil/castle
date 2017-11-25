@@ -8,7 +8,7 @@ class ChessEnv(object):
     """
     A simplified chess environment where one king faces off against
     a king and queen on an 8x8 board
-    
+
     Description of different regimes
 
     REGIME 1: 'state_regime = KQK_conv AND action_regime = KQK_pos_pos'
@@ -73,9 +73,6 @@ class ChessEnv(object):
             result = -1
         return result
 
-    def is_legal(self, state, action):
-        return action in self.get_legal_actions(state)
-      
     def board_str(self, state):
         board = self._map_state_to_board(state)
         return str(board)
@@ -180,4 +177,3 @@ class ChessEnv(object):
                 from_square = map_xy_to_square(from_x, from_y)
                 to_square = map_xy_to_square(to_x, to_y)
                 return chess.Move(from_square, to_square)
-

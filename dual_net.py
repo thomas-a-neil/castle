@@ -38,6 +38,70 @@ def residual_block(tensor, specs):
     tensor = tf.nn.relu(tensor)
     return tensor
 
+def build_model(board_placeholder,
+                legality_mask_placeholder,
+                scope,
+                shared_layers,
+                policy_head,
+                value_head):
+    """
+    Returns the output tensors for an model based on the layers in shared_layers,
+    policy_head, and value_head.
+    shared_layers is a list of dicts, each dict representing a layer.
+    - Convolutional layers:
+       - d['layer'] <- 'conv'
+       - d['num_outputs'], d['kernel_size'], d['stride'] should be ints
+       - d['activation_fn'] is a function
+    - Residual layers:
+       - d['layer'] <- 'residual'
+       - other keys same as convolutional
+    - Fully connected layers:
+       - d['layer'] <- 'fc'
+       - d['num_outputs'] is an int
+       - d['activation_fn'] is a function
+    policy_head and value_head have the same structure as above but represent
+    the layers for the policy head and value head, respectively.
+
+    returns the policy output and the value output in a tuple
+    """
+    out = board_placeholder
+    for specs in shared_layers:
+        if specs['layer'] == 'conv':
+            out = conv_block(out, specs)
+        elif specs['layer'] == 'residual':
+            out = residual_block(out, specs)
+        elif specs['layer'] == 'fc':
+            out = layers.flatten(out)
+            out = layers.fully_connected(out,
+                                         num_outputs=specs['num_outputs'],
+                                         activation_fn=specs['activation_fn'])
+    # Policy head
+    policy_out = out
+    for specs in policy_head:
+        if specs['layer'] == 'conv':
+            policy_out = conv_block(policy_out, specs)
+        elif specs['layer'] == 'fc':
+            policy_out = layers.flatten(policy_out)
+            policy_out = layers.fully_connected(policy_out,
+                                                num_outputs=specs['num_outputs'],
+                                                activation_fn=specs['activation_fn'])
+
+    x = tf.exp(policy_out) * legality_mask_placeholder
+    # Needs reshape to broadcast properly
+    policy_out = x / tf.reshape(tf.reduce_sum(x, axis=1), shape=((tf.shape(x)[0],) + (1,)))
+
+    # Value head
+    value_out = out
+    for specs in value_head:
+        if specs['layer'] == 'conv':
+            value_out = conv_block(value_out, specs)
+        elif specs['layer'] == 'fc':
+            value_out = layers.flatten(value_out)
+            value_out = layers.fully_connected(value_out,
+                                               num_outputs=specs['num_outputs'],
+                                               activation_fn=specs['activation_fn'])
+    return policy_out, value_out
+
 
 
 class DualNet(object):
@@ -87,7 +151,7 @@ class DualNet(object):
 
         self.boards = None
         self.move_legality_mask = tf.placeholder(tf.float32, [None, self.action_size])
-        self.policy_predict, self.value_predict = self.build_model(self.board_placeholder,
+        self.policy_predict, self.value_predict = build_model(self.board_placeholder,
                                                               self.move_legality_mask,
                                                               scope='net',
                                                               shared_layers=shared_layers,
@@ -96,7 +160,7 @@ class DualNet(object):
         self.z = tf.placeholder(tf.float32, [None])
         self.pi = tf.placeholder(tf.float32, [None, action_size])
         self.value_loss = tf.reduce_sum(tf.square(self.value_predict - self.z))
-        self.policy_loss = tf.reduce_sum(tf.multiply(self.pi, self.policy_predict))
+        self.policy_loss = tf.reduce_sum(tf.multiply(self.pi, tf.log(self.policy_predict)))
         self.regularization_loss = layers.apply_regularization(layers.l2_regularizer(regularization_mult),
                                                                weights_list=tf.trainable_variables())
         self.loss = self.value_loss - self.policy_loss + tf.reduce_sum(self.regularization_loss)
@@ -104,70 +168,7 @@ class DualNet(object):
         self.sess = sess
 
 
-    def build_model(self,
-                    board_placeholder,
-                    legality_mask_placeholder,
-                    scope,
-                    shared_layers,
-                    policy_head,
-                    value_head):
-        """
-        Returns the output tensors for an model based on the layers in shared_layers,
-        policy_head, and value_head.
-        shared_layers is a list of dicts, each dict representing a layer.
-        - Convolutional layers:
-           - d['layer'] <- 'conv'
-           - d['num_outputs'], d['kernel_size'], d['stride'] should be ints
-           - d['activation_fn'] is a function
-        - Residual layers:
-           - d['layer'] <- 'residual'
-           - other keys same as convolutional
-        - Fully connected layers:
-           - d['layer'] <- 'fc'
-           - d['num_outputs'] is an int
-           - d['activation_fn'] is a function
-        policy_head and value_head have the same structure as above but represent
-        the layers for the policy head and value head, respectively.
 
-        returns the policy output and the value output in a tuple
-        """
-        out = board_placeholder
-        for specs in shared_layers:
-            if specs['layer'] == 'conv':
-                out = conv_block(out, specs)
-            elif specs['layer'] == 'residual':
-                out = residual_block(out, specs)
-            elif specs['layer'] == 'fc':
-                out = layers.flatten(out)
-                out = layers.fully_connected(out,
-                                             num_outputs=specs['num_outputs'],
-                                             activation_fn=specs['activation_fn'])
-        # Policy head
-        policy_out = out
-        for specs in policy_head:
-            if specs['layer'] == 'conv':
-                policy_out = conv_block(policy_out, specs)
-            elif specs['layer'] == 'fc':
-                policy_out = layers.flatten(policy_out)
-                policy_out = layers.fully_connected(policy_out,
-                                                    num_outputs=specs['num_outputs'],
-                                                    activation_fn=specs['activation_fn'])
-
-        x = tf.exp(policy_out) * legality_mask_placeholder
-        # Needs reshape to broadcast properly 
-        policy_out = x / tf.reshape(tf.reduce_sum(x, axis=1), shape=((tf.shape(x)[0],) + (1,)))
-
-        # Value head
-        value_out = out
-        for specs in value_head:
-            if specs['layer'] == 'conv':
-                value_out = conv_block(value_out, specs)
-            elif specs['layer'] == 'fc':
-                value_out = layers.flatten(value_out)
-                value_out = layers.fully_connected(value_out,
-                                                   num_outputs=specs['num_outputs'],
-                                                   activation_fn=specs['activation_fn'])
-        return policy_out, value_out
 
 
     def __call__(self, inp):

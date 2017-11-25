@@ -52,12 +52,6 @@ class MockEnv(object):
     def is_game_over(self, state):
         return False
 
-    def get_legal_actions(self, state):
-        return np.array([0, 1])
-
-    def is_game_over(self, state):
-        return False
-
 mock_env = MockEnv()
 
 
@@ -81,6 +75,8 @@ class NumlineEnv(object):
 
     def is_game_over(self, state):
         return False
+
+numline_env = NumlineEnv()
 
 def setup_simple_tree():
     #      0
