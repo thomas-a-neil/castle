@@ -49,7 +49,6 @@ class TestPrediction(unittest.TestCase):
         state = board_to_state(board)
         new_board = state_to_board(state)
         self.assertEqual(str(new_board), str(board))
-
     def test_predict(self):
         policy, value = self.net(self.boards)
         self.assertEqual(policy.shape, (10, 64*64))

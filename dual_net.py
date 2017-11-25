@@ -40,7 +40,6 @@ def residual_block(tensor, specs):
 
 
 
-
 class DualNet(object):
 
     def __init__(self,
