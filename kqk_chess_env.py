@@ -104,6 +104,10 @@ class KQKChessEnv(object):
         board = self.map_state_to_board(state)
         return str(board)
 
+    def print_board(self, state):
+        board = self.map_state_to_board(state)
+        print(board)
+
     def convert_action_to_int(self, action_array):
         action_array = np.reshape(action_array, -1)
         return np.where(action_array == 1)[0]

@@ -74,6 +74,10 @@ class ChessEnv(object):
         board = self.map_state_to_board(state)
         return str(board)
 
+    def print_board(self, state):
+        board = self.map_state_to_board(state)
+        print(board)
+
     def map_board_to_state(self, board):
         """
         Translates a chess.Board() object to an input state according to the
