@@ -3,13 +3,12 @@ import numpy as np
 from mcts import get_action_distribution
 
 
-def self_play_game(self,
-                   model,
+def self_play_game(model,
                    env,
                    start_state,
                    n_leaf_expansions,
-                   c_puct,
-                   temperature,
+                   c_puct=1.0,
+                   temperature=1,
                    max_num_turns=40):
     """
     Plays a game (defined by the env), where a model with MCTS action distribution improvement plays
