@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class TicTacToeEnv(object):
     def __init__(self):
         """
@@ -8,7 +9,6 @@ class TicTacToeEnv(object):
             action: make actions a single integer -- in range(0, 18)
         assume x's always go first
         """
-
         self.action_dims = (2, 3, 3)
 
     # The following 4 methods are called outside of the environment
@@ -29,7 +29,6 @@ class TicTacToeEnv(object):
                     action_int = self.convert_action_to_int(action_array)
                     legal_actions.append(action_int)
         return np.array(legal_actions)
-
 
     def is_game_over(self, state):
         result = self.outcome(state)
@@ -101,11 +100,5 @@ class TicTacToeEnv(object):
         else:
             return -1
 
-
     def convert_turn_to_winner(self, turn):
-        return (1- turn) * 2 - 1
-
-
-
-
-
+        return (1 - turn) * 2 - 1
