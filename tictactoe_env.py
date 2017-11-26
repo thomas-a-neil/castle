@@ -11,7 +11,6 @@ class TicTacToeEnv(object):
         """
         self.action_dims = (2, 3, 3)
 
-    # The following 4 methods are called outside of the environment
     def get_next_state(self, state, action_int):
         action_array = self.convert_int_to_action(action_int)
         next_state = state + action_array
@@ -60,6 +59,20 @@ class TicTacToeEnv(object):
         # if we reach this point, the game is not over.  return 2
         return 2
 
+    def get_turn_tictactoe(self, state):
+        """
+        return 0 if x's turn
+        return 1 if o's turn
+        """
+        num_xs = state[0, :, :].sum()
+        num_os = state[1, :, :].sum()
+        if num_os == num_xs:
+            return 0
+        elif num_xs > num_os:
+            return 1
+        else:
+            raise InvalidStateException(state)
+
     def print_board(self, state):
         for i in range(3):
             row = ''
@@ -86,19 +99,9 @@ class TicTacToeEnv(object):
         action_array = np.reshape(action_array, (self.action_dims))
         return action_array
 
-    def get_turn_tictactoe(self, state):
-        """
-        return 0 if x's turn
-        return 1 if o's turn
-        """
-        num_xs = state[0, :, :].sum()
-        num_os = state[1, :, :].sum()
-        if num_os == num_xs:
-            return 0
-        elif num_xs > num_os:
-            return 1
-        else:
-            return -1
-
     def convert_turn_to_winner(self, turn):
         return (1 - turn) * 2 - 1
+
+
+class InvalidStateException(Exception):
+    pass
