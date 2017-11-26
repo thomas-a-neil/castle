@@ -4,7 +4,9 @@ import numpy as np
 import tensorflow as tf
 
 from chess_env import ChessEnv
-from dual_net import DualNet, KQK_CHESS_INPUT_SHAPE, KQK_POSITION_POSITION_PIECE_ACTION_SIZE
+from kqk_chess_env import KQKChessEnv
+from dual_net import DualNet
+from kqk_chess_env import KQK_CHESS_INPUT_SHAPE, KQK_POSITION_POSITION_PIECE_ACTION_SIZE
 from game import Game
 
 from utils import numline_env, mock_model_numline
@@ -29,11 +31,11 @@ class TestNumlineGame(unittest.TestCase):
                                        max_num_turns=5)
 
 
-class TestChessGame(unittest.TestCase):
+class TestKQKChessGame(unittest.TestCase):
     def setUp(self):
         state_regime = 'KQK_conv'
         action_regime = 'KQK_pos_pos_piece'
-        self.env = ChessEnv(state_regime, action_regime)
+        self.env = KQKChessEnv(state_regime, action_regime)
         start_state = np.zeros(KQK_CHESS_INPUT_SHAPE, dtype=int)
 
         # White King
@@ -54,7 +56,7 @@ class TestChessGame(unittest.TestCase):
 
         self.start_state = start_state
         sess = tf.Session()
-        self.network = DualNet(sess, input_shape=KQK_CHESS_INPUT_SHAPE, action_size=KQK_POSITION_POSITION_PIECE_ACTION_SIZE)
+        self.network = DualNet(sess, self.env)
         sess.__enter__()
         tf.global_variables_initializer().run()
 

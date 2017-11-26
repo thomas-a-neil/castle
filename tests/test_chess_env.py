@@ -1,58 +1,32 @@
 import unittest
 
 import numpy as np
+import chess
 
 from chess_env import ChessEnv
 
 
 class TestChessEnv(unittest.TestCase):
     def setUp(self):
-        self.env = ChessEnv('KQK_conv', 'KQK_pos_pos_piece')
+        self.env = ChessEnv()
 
-    def test_checkmate(self):
-        start_state = np.zeros((8, 8, 4), dtype=int)
-        start_state[0, 2, 0] = 1
-        start_state[2, 0, 1] = 1
-        start_state[0, 0, 2] = 1
-        start_state[:, :, 3] = np.zeros((8, 8))
-        self.assertEqual(self.env.get_legal_actions(start_state).size, 0)
-        self.assertTrue(self.env.is_game_over(start_state))
-        self.assertEqual(self.env.outcome(start_state), 1)
+    def test_move_to_index(self):
+        uci_move = chess.Move.from_uci('a1b1')
+        index = self.env.move_to_index(None, uci_move)
+        self.assertEqual(index, 1)
 
-    def test_2_moves(self):
-        start_state = np.zeros((8, 8, 4), dtype=int)
-        start_state[0, 2, 0] = 1
-        start_state[2, 0, 1] = 1
-        start_state[3, 3, 2] = 1
-        start_state[:, :, 3] = np.ones((8, 8))
-        num_legal_moves = self.env.get_legal_actions(start_state).size
-        self.assertTrue(num_legal_moves > 0)
-        self.assertFalse(self.env.is_game_over(start_state))
+        uci_move = chess.Move.from_uci('a2a3')
+        index = self.env.move_to_index(None, uci_move)
+        self.assertEqual(index, 528)
 
-        action = np.zeros((8, 8, 8, 8, 3), dtype=int)
-        action[2, 0, 7, 0, 1] = 1
-        action = self.env.convert_action_to_int(action)
-        next_state = self.env.get_next_state(start_state, action)
-        true_next_state = np.zeros((8, 8, 4), dtype=int)
-        true_next_state[0, 2, 0] = 1
-        true_next_state[7, 0, 1] = 1
-        true_next_state[3, 3, 2] = 1
-        self.assertTrue(np.array_equal(true_next_state, next_state))
+    def test_board_to_state(self):
+        board = chess.Board()
+        state = self.env.map_board_to_state(board)
+        # Checks top two rows of the black pawn layer
+        self.assertEqual(str(state[0:2,:,11]), '[[ 0.  0.  0.  0.  0.  0.  0.  0.]\n [ 1.  1.  1.  1.  1.  1.  1.  1.]]')
 
-        action_2 = np.zeros((8, 8, 8, 8, 3), dtype=int)
-        action_2[3, 3, 4, 4, 2] = 1
-        action_2 = self.env.convert_action_to_int(action_2)
-        next_state_2 = self.env.get_next_state(next_state, action_2)
-        true_next_state_2 = np.zeros((8, 8, 4), dtype=int)
-        true_next_state_2[:, :, 3] = np.ones((8, 8))
-        true_next_state_2[0, 2, 0] = 1
-        true_next_state_2[7, 0, 1] = 1
-        true_next_state_2[4, 4, 2] = 1
-        self.assertTrue(np.array_equal(true_next_state_2, next_state_2))
-
-    def test_legal_actions(self):
-        start_state = np.zeros((8, 8, 4), dtype=int)
-        start_state[0, 2, 0] = 1
-        start_state[5, 5, 1] = 1
-        start_state[0, 0, 2] = 1
-        self.assertEqual(self.env.get_legal_actions(start_state).size, 1)
+    def test_state_to_board(self):
+        board = chess.Board()
+        state = self.env.map_board_to_state(board)
+        new_board = self.env.map_state_to_board(state)
+        self.assertEqual(str(new_board), str(board))
