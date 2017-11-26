@@ -38,6 +38,7 @@ def residual_block(tensor, specs):
     tensor = tf.nn.relu(tensor)
     return tensor
 
+
 def build_model(board_placeholder,
                 legality_mask_placeholder,
                 scope,
@@ -103,7 +104,6 @@ def build_model(board_placeholder,
     return policy_out, value_out
 
 
-
 class DualNet(object):
 
     def __init__(self,
@@ -166,10 +166,6 @@ class DualNet(object):
         self.loss = self.value_loss - self.policy_loss + tf.reduce_sum(self.regularization_loss)
         self.update_op = tf.train.AdamOptimizer(learning_rate).minimize(self.loss)
         self.sess = sess
-
-
-
-
 
     def __call__(self, inp):
         """
@@ -302,8 +298,9 @@ def board_to_state(board):
                 continue
             state[i][j][CHAR_TO_INDEX_MAP[char]] = 1
     if board.turn:
-        state[:,:,12] = np.ones(shape=(8,8))
+        state[:, :, 12] = np.ones(shape=(8, 8))
     return state
+
 
 def move_to_index(move):
     """
@@ -318,6 +315,7 @@ def move_to_index(move):
     from_pos = position_to_index(uci[:2])
     to_pos = position_to_index(uci[2:])
     return 64 * from_pos + to_pos
+
 
 def position_to_index(position):
     """
