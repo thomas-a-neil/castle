@@ -1,10 +1,16 @@
 import numpy as np
 import chess
 
-from tests.utils import map_xy_to_square, map_square_to_xy
+
+def map_xy_to_square(x, y):
+    return int(8*y + x)
 
 
-class ChessEnv(object):
+def map_square_to_xy(square):
+    return int(square % 8), int(square // 8)
+
+
+class KQKChessEnv(object):
     """
     A simplified chess environment where one king faces off against
     a king and queen on an 8x8 board

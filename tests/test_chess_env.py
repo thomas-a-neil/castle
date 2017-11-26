@@ -2,12 +2,12 @@ import unittest
 
 import numpy as np
 
-from chess_env import ChessEnv
+from chess_env import KQKChessEnv
 
 
-class TestChessEnv(unittest.TestCase):
+class TestKQKChessEnv(unittest.TestCase):
     def setUp(self):
-        self.env = ChessEnv('KQK_conv', 'KQK_pos_pos_piece')
+        self.env = KQKChessEnv('KQK_conv', 'KQK_pos_pos_piece')
 
     def test_checkmate(self):
         start_state = np.zeros((8, 8, 4), dtype=int)
