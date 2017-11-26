@@ -160,7 +160,11 @@ class DualNet(object):
         self.z = tf.placeholder(tf.float32, [None])
         self.pi = tf.placeholder(tf.float32, [None, action_size])
         self.value_loss = tf.reduce_sum(tf.square(self.value_predict - self.z))
-        self.policy_loss = tf.reduce_sum(tf.multiply(self.pi, tf.log(self.policy_predict)))
+
+        # when the 0s become 0.000001s for illegal actions, we are counting on the fact that the are 
+        # nullified by the corresponding index of self.pi to be 0
+        self.policy_loss = tf.reduce_sum(tf.multiply(self.pi, tf.log(self.policy_predict + 0.0001)))
+
         self.regularization_loss = layers.apply_regularization(layers.l2_regularizer(regularization_mult),
                                                                weights_list=tf.trainable_variables())
         self.loss = self.value_loss - self.policy_loss + tf.reduce_sum(self.regularization_loss)
@@ -189,20 +193,17 @@ class DualNet(object):
                                                  self.move_legality_mask: move_legality_mask})
         return policy, value
 
-    def train(self, boards, pi, z):
+    def train(self, states, pi, z, legality_mask):
         """
         Performs one step of gradient descent based on a batch of input boards,
         MCTS policies, and rewards of shape [None, 1].  Shapes of inputs and policies
         should match input_shape and action_size as set during initialization.
         returns the batch loss
         """
-        self.boards = [state_to_board(board) for board in boards]
-        self.sess.run([self.update_op], feed_dict={self.board_placeholder: boards,
-                                                   self.pi: pi,
-                                                   self.z: z})
-        loss = self.sess.run([self.loss], feed_dict={self.board_placeholder: boards,
+        loss, _ = self.sess.run([self.loss, self.update_op], feed_dict={self.board_placeholder: states,
                                                      self.pi: pi,
-                                                     self.z: z})
+                                                     self.z: z,
+                                                     self.move_legality_mask: legality_mask})
         return loss
 
 # Map from piece to layer in net input.  0-5 are white.

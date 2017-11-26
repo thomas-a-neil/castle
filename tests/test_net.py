@@ -22,8 +22,8 @@ class TestPrediction(unittest.TestCase):
         self.sess.__enter__()
         tf.global_variables_initializer().run()
 
-        #self.boards = np.random.random_sample([10, 8, 8, 13])
-        self.boards = [board_to_state(chess.Board()) for _ in range(10)]
+        #self.states = np.random.random_sample([10, 8, 8, 13])
+        self.states = [board_to_state(chess.Board()) for _ in range(10)]
         self.z = np.random.random_sample([10])
 
     def test_KQK(self):
@@ -49,8 +49,9 @@ class TestPrediction(unittest.TestCase):
         state = board_to_state(board)
         new_board = state_to_board(state)
         self.assertEqual(str(new_board), str(board))
+
     def test_predict(self):
-        policy, value = self.net(self.boards)
+        policy, value = self.net(self.states)
         self.assertEqual(policy.shape, (10, 64*64))
         # Check that move a1->a1 is illegal
         self.assertEqual(policy[0, 0], 0)
@@ -58,13 +59,13 @@ class TestPrediction(unittest.TestCase):
         self.assertNotEqual(policy[0, 528], 0)
 
     def test_predict_with_piece_action(self):
-        policy, value = self.piece_net(self.boards)
+        policy, value = self.piece_net(self.states)
         self.assertEqual(policy.shape, (10, 32*64))
 
     def test_regularization(self):
         pi = np.random.random_sample([10, 64*64])
         regularization_loss = self.sess.run(self.net.regularization_loss,
-                                            feed_dict={self.net.board_placeholder: self.boards,
+                                            feed_dict={self.net.board_placeholder: self.states,
                                                        self.net.pi: pi,
                                                        self.net.z: self.z})
         self.assertGreater(regularization_loss, 0)
@@ -77,6 +78,39 @@ class TestPrediction(unittest.TestCase):
         uci_move = chess.Move.from_uci('a2a3')
         index = move_to_index(uci_move)
         self.assertEqual(index, 528)
+
+    def test_train_decreases_loss(self):
+        '''
+        this is a randomized test 
+        on average, the loss should decrease after 50 training steps
+        we assume all actions are legal here
+        '''
+        pi = np.random.random_sample([10, 64*64])
+        legality_mask = np.ones((10, 64*64))
+        
+        num_iters = 50
+        losses = np.zeros(num_iters)
+        for j in range(50):
+            losses[j] = self.net.train(self.states, pi, self.z, legality_mask)
+        self.assertGreater(losses[0], losses[-1])
+
+    def test_train_3_legal_actions(self):
+        '''
+        this is a randomized test 
+        on average, the loss should decrease after 50 training steps
+        we assume all actions are legal here
+        '''
+        pi = np.random.random_sample([10, 64*64])
+        legality_mask = np.zeros((10, 64*64))
+        legal_actions = np.random.randint(0, 64*64, 3)
+
+        legality_mask[:,legal_actions] = 1
+        
+        num_iters = 50
+        losses = np.zeros(num_iters)
+        for j in range(50):
+            losses[j] = self.net.train(self.states, pi, self.z, legality_mask)
+        self.assertGreater(losses[0], losses[-1])
 
 
 if __name__ == '__main__':
