@@ -180,22 +180,25 @@ class DualNet(object):
                                                  self.move_legality_mask: move_legality_mask})
         return policy, value
 
-    def train(self, states, pi, z, legality_mask):
+    def train(self, states, pi, z, token_legality_mask=None):
         """
         Performs one step of gradient descent based on a batch of input boards,
         MCTS policies, and rewards of shape [None, 1].  Shapes of inputs and policies
         should match input_shape and action_size as set during initialization.
         returns the batch loss
+
+        The token_legality_mask is just for test purposes so we can input a mask of our choosing
+        Otherwise, it gets the legality_mask from the environment
         """
-        move_legality_mask = np.zeros(shape=(len(states), self.action_size))
-        for i in range(len(states)):
-            move_legality_mask[i] = self.env.get_legality_mask(states[i])
-        self.sess.run([self.update_op], feed_dict={self.board_placeholder: states,
+        if token_legality_mask is None:
+          move_legality_mask = np.zeros(shape=(len(states), self.action_size))
+          for i in range(len(states)):
+              move_legality_mask[i] = self.env.get_legality_mask(states[i])
+        else:
+          move_legality_mask = token_legality_mask
+        _, loss = self.sess.run([self.update_op, self.loss], feed_dict={self.board_placeholder: states,
                                                    self.pi: pi,
                                                    self.z: z,
                                                    self.move_legality_mask: move_legality_mask})
-        loss = self.sess.run(self.loss, feed_dict={self.board_placeholder: states,
-                                                     self.pi: pi,
-                                                     self.z: z,
-                                                     self.move_legality_mask: move_legality_mask})
+
         return loss
