@@ -187,14 +187,14 @@ class DualNet(object):
         should match input_shape and action_size as set during initialization.
         returns the batch loss
         """
-        move_legality_mask = np.zeros(shape=(len(boards), self.action_size))
-        for i in range(len(inp)):
-            move_legality_mask[i] = self.env.get_legality_mask(inp[i])
-        self.sess.run([self.update_op], feed_dict={self.board_placeholder: boards,
+        move_legality_mask = np.zeros(shape=(len(states), self.action_size))
+        for i in range(len(states)):
+            move_legality_mask[i] = self.env.get_legality_mask(states[i])
+        self.sess.run([self.update_op], feed_dict={self.board_placeholder: states,
                                                    self.pi: pi,
                                                    self.z: z,
                                                    self.move_legality_mask: move_legality_mask})
-        loss = self.sess.run([self.loss], feed_dict={self.board_placeholder: boards,
+        loss = self.sess.run(self.loss, feed_dict={self.board_placeholder: states,
                                                      self.pi: pi,
                                                      self.z: z,
                                                      self.move_legality_mask: move_legality_mask})

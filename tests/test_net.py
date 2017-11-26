@@ -57,13 +57,6 @@ class TestPrediction(unittest.TestCase):
         self.assertEqual(policy.shape, (10, 64*64))
         self.assertEqual(value.size, 10)
 
-
-    def test_state_to_board(self):
-        board = chess.Board()
-        state = board_to_state(board)
-        new_board = state_to_board(state)
-        self.assertEqual(str(new_board), str(board))
-
     def test_predict(self):
         policy, value = self.net(self.states)
         self.assertEqual(policy.shape, (10, 64*64))
