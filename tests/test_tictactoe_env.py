@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from tictactoe_env import TicTacToeEnv
+from tictactoe_env import TicTacToeEnv, InvalidStateException
 
 
 class TestTicTacToeEnv(unittest.TestCase):
@@ -144,3 +144,10 @@ class TestTicTacToeEnv(unittest.TestCase):
         self.assertTrue(np.array_equal(true_next_state, next_state))
         self.assertEqual(self.env.is_game_over(next_state), 1)
         self.assertEqual(self.env.outcome(next_state), -1)
+
+    def test_invalid_state(self):
+        invalid_state = np.zeros((2, 3, 3), dtype=int)
+        # one o. x must move before o
+        invalid_state[1, 0, 1] = 1
+        with self.assertRaises(InvalidStateException):
+            self.env.is_x_turn(invalid_state)

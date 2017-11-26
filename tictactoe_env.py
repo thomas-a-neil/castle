@@ -17,13 +17,13 @@ class TicTacToeEnv(object):
         return next_state
 
     def get_legal_actions(self, state):
-        turn = self.get_turn_tictactoe(state)
+        turn_index = 0 if self.is_x_turn(state) else 1
         legal_actions = []
         for i in range(3):
             for j in range(3):
                 if state[:, i, j].sum() == 0:
                     action_array = np.zeros((2, 3, 3), dtype=int)
-                    action_array[turn, i, j] = 1
+                    action_array[turn_index, i, j] = 1
                     action_int = self.convert_action_to_int(action_array)
                     legal_actions.append(action_int)
         return np.array(legal_actions)
@@ -59,10 +59,9 @@ class TicTacToeEnv(object):
         # if we reach this point, the game is not over.  return 2
         return 2
 
-    def get_turn_tictactoe(self, state):
+    def is_x_turn(self, state):
         """
-        return 0 if x's turn
-        return 1 if o's turn
+        Return True if x's turn. False if o's turn.
         """
         num_xs = state[0, :, :].sum()
         num_os = state[1, :, :].sum()
