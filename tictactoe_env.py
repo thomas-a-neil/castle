@@ -19,7 +19,6 @@ class TicTacToeEnv(object):
 
     def get_legal_actions(self, state):
         turn = self.get_turn_tictactoe(state)
-        # legal_actions = np.zeros((2, 3, 3), dtype=int)
         legal_actions = []
         for i in range(3):
             for j in range(3):
@@ -31,11 +30,12 @@ class TicTacToeEnv(object):
         return np.array(legal_actions)
 
     def is_game_over(self, state):
+        """
+        Returns True if the state indicates the game is over.
+        False otherwise.
+        """
         result = self.outcome(state)
-        if result == 2:
-            return 0
-        else:
-            return 1
+        return not result == 2
 
     def outcome(self, state):
         """
