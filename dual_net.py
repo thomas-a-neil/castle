@@ -1,12 +1,10 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 
-FULL_CHESS_INPUT_SHAPE = (8, 8, 13)
-KQK_CHESS_INPUT_SHAPE = (8, 8, 4)
+import numpy as np
+import chess
 
-POSITION_POSITION_ACTION_SIZE = 64 * 64
-KQK_POSITION_POSITION_PIECE_ACTION_SIZE = 64 * 64 * 3
-PIECE_POSITION_ACTION_SIZE = 32 * 64
+from chess_env import FULL_CHESS_INPUT_SHAPE
 
 
 # A convolutional block as described in AlphaGo Zero
@@ -37,6 +35,7 @@ def residual_block(tensor, specs):
 
 
 def build_model(board_placeholder,
+                legality_mask_placeholder,
                 scope,
                 shared_layers,
                 policy_head,
@@ -83,7 +82,9 @@ def build_model(board_placeholder,
                                                 num_outputs=specs['num_outputs'],
                                                 activation_fn=specs['activation_fn'])
 
-    policy_out = tf.nn.log_softmax(policy_out)
+    x = tf.exp(policy_out) * legality_mask_placeholder
+    # Needs reshape to broadcast properly
+    policy_out = x / tf.reshape(tf.reduce_sum(x, axis=1), shape=((tf.shape(x)[0],) + (1,)))
 
     # Value head
     value_out = out
@@ -102,25 +103,27 @@ class DualNet(object):
 
     def __init__(self,
                  sess,
+                 env,
                  learning_rate=0.01,
                  regularization_mult=0.01,
                  n_residual_layers=2,
-                 input_shape=FULL_CHESS_INPUT_SHAPE,
-                 action_size=POSITION_POSITION_ACTION_SIZE,
+                 #input_shape=FULL_CHESS_INPUT_SHAPE,
+                 #action_size=POSITION_POSITION_ACTION_SIZE,
                  num_convolutional_filters=256
                  ):
         """
         sess: tensorflow session
+        env: environment to determine move legality with
         learning_rate: learning rate for gradient descent
         regularization_mult: multiplier for weight regularization loss
         n_residual_layers: how many residual layers to add, as described in
                            AlphaGo Zero.
-        input_shape: a tuple describing the state input shape
-        action_size: int describing size of action space
         num_convolutional_filters: how many convolutional filters to have in
                                    each convolutional layer
         """
-        self.board_placeholder = tf.placeholder(tf.float32, [None] + list(input_shape))
+        self.action_size = env.action_size
+        self.board_placeholder = tf.placeholder(tf.float32, [None] + list(env.input_shape))
+        self.env = env
 
         shared_layers = [{'layer': 'conv', 'num_outputs':
                           num_convolutional_filters, 'stride': 3,
@@ -133,7 +136,7 @@ class DualNet(object):
 
         policy_layers = [{'layer': 'conv', 'num_outputs': 2, 'stride': 1,
                           'kernel_size': 1, 'activation_fn': tf.nn.relu},
-                         {'layer': 'fc', 'num_outputs': action_size,
+                         {'layer': 'fc', 'num_outputs': self.action_size,
                           'activation_fn': None}]
         value_layers = [{'layer': 'conv', 'num_outputs': 1, 'stride': 1,
                          'kernel_size': 1, 'activation_fn': tf.nn.relu},
@@ -142,15 +145,22 @@ class DualNet(object):
                         {'layer': 'fc', 'num_outputs': 1,
                          'activation_fn': tf.nn.tanh}]
 
+        self.boards = None
+        self.move_legality_mask = tf.placeholder(tf.float32, [None, self.action_size])
         self.policy_predict, self.value_predict = build_model(self.board_placeholder,
+                                                              self.move_legality_mask,
                                                               scope='net',
                                                               shared_layers=shared_layers,
                                                               policy_head=policy_layers,
                                                               value_head=value_layers)
         self.z = tf.placeholder(tf.float32, [None])
-        self.pi = tf.placeholder(tf.float32, [None, action_size])
+        self.pi = tf.placeholder(tf.float32, [None, self.action_size])
         self.value_loss = tf.reduce_sum(tf.square(self.value_predict - self.z))
-        self.policy_loss = tf.reduce_sum(tf.multiply(self.pi, self.policy_predict))
+
+        # when the 0s become 0.000001s for illegal actions, we are counting on the fact that the are
+        # nullified by the corresponding index of self.pi to be 0
+        self.policy_loss = tf.reduce_sum(tf.multiply(self.pi, tf.log(self.policy_predict + 0.0001)))
+
         self.regularization_loss = layers.apply_regularization(layers.l2_regularizer(regularization_mult),
                                                                weights_list=tf.trainable_variables())
         self.loss = self.value_loss - self.policy_loss + tf.reduce_sum(self.regularization_loss)
@@ -162,21 +172,33 @@ class DualNet(object):
         Gets a feed-forward prediction for a batch of input boards of shape set
         during initialization.
         """
+        move_legality_mask = np.zeros(shape=(inp.shape[0], self.action_size))
+        for i in range(inp.shape[0]):
+            move_legality_mask[i] = self.env.get_legality_mask(inp[i])
         policy, value = self.sess.run([self.policy_predict, self.value_predict],
-                                      feed_dict={self.board_placeholder: inp})
+                                      feed_dict={self.board_placeholder: inp,
+                                                 self.move_legality_mask: move_legality_mask})
         return policy, value
 
-    def train(self, boards, pi, z):
+    def train(self, states, pi, z, token_legality_mask=None):
         """
         Performs one step of gradient descent based on a batch of input boards,
         MCTS policies, and rewards of shape [None, 1].  Shapes of inputs and policies
         should match input_shape and action_size as set during initialization.
         returns the batch loss
+
+        The token_legality_mask is just for test purposes so we can input a mask of our choosing
+        Otherwise, it gets the legality_mask from the environment
         """
-        self.sess.run([self.update_op], feed_dict={self.board_placeholder: boards,
+        if token_legality_mask is None:
+          move_legality_mask = np.zeros(shape=(len(states), self.action_size))
+          for i in range(len(states)):
+              move_legality_mask[i] = self.env.get_legality_mask(states[i])
+        else:
+          move_legality_mask = token_legality_mask
+        _, loss = self.sess.run([self.update_op, self.loss], feed_dict={self.board_placeholder: states,
                                                    self.pi: pi,
-                                                   self.z: z})
-        loss = self.sess.run([self.loss], feed_dict={self.board_placeholder: boards,
-                                                     self.pi: pi,
-                                                     self.z: z})
+                                                   self.z: z,
+                                                   self.move_legality_mask: move_legality_mask})
+
         return loss

@@ -78,7 +78,6 @@ class NumlineEnv(object):
 
 numline_env = NumlineEnv()
 
-
 def setup_simple_tree():
     #      0
     #   1     2
