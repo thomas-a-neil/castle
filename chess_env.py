@@ -21,7 +21,15 @@ PIECE_POSITION_ACTION_SIZE = 32 * 64
 POSITION_POSITION_ACTION_SIZE = 64 * 64
 
 
-class ChessEnv(object):
+def map_xy_to_square(x, y):
+    return int(8*y + x)
+
+
+def map_square_to_xy(square):
+    return int(square % 8), int(square // 8)
+
+
+class KQKChessEnv(object):
     """
     The full chess environment.
     """

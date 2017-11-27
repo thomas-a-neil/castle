@@ -123,11 +123,3 @@ def setup_uneven_tree():
     # 7->10
     nodes[7].add_edge_do_background_work(nodes[10], 1, 1.0)
     return nodes
-
-
-def map_xy_to_square(x, y):
-    return int(8*y + x)
-
-
-def map_square_to_xy(square):
-    return int(square % 8), int(square // 8)
