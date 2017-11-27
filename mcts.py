@@ -53,9 +53,8 @@ def expand_node(node, model, env):
     action_probs = vec_action_probs[0]
     value = values[0]
     legal_actions = env.get_legal_actions(node.state)
-    for i in range(legal_actions.size):
-        action = legal_actions[i]
 
+    for i, action in enumerate(legal_actions):
         '''
         the index here is important (not i!).
         action_probs is a vector of length action_size
@@ -157,11 +156,7 @@ def get_action_distribution(start_state,
     # our distribution is only over legal actions, some subset of the action space
     # all illegal actions have zero probability due to being unexplored
     total_action_distribution = np.zeros(env.action_size)
-    try:
-        action_indexes = [edge.action for edge in root_node.outgoing_edges]
-        total_action_distribution[action_indexes] = distribution
-    except:
-        action_indexes = [edge.action[0] for edge in root_node.outgoing_edges]
-        total_action_distribution[action_indexes] = distribution
+    action_indexes = [edge.action for edge in root_node.outgoing_edges]
+    total_action_distribution[action_indexes] = distribution
 
     return total_action_distribution
