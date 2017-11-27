@@ -15,7 +15,7 @@ class TestKQKChessEnv(unittest.TestCase):
         start_state[2, 0, 1] = 1
         start_state[0, 0, 2] = 1
         start_state[:, :, 3] = np.zeros((8, 8))
-        self.assertEqual(self.env.get_legal_actions(start_state).size, 0)
+        self.assertEqual(len(self.env.get_legal_actions(start_state)), 0)
         self.assertTrue(self.env.is_game_over(start_state))
         self.assertEqual(self.env.outcome(start_state), 1)
 
@@ -25,7 +25,7 @@ class TestKQKChessEnv(unittest.TestCase):
         start_state[2, 0, 1] = 1
         start_state[3, 3, 2] = 1
         start_state[:, :, 3] = np.ones((8, 8))
-        num_legal_moves = self.env.get_legal_actions(start_state).size
+        num_legal_moves = len(self.env.get_legal_actions(start_state))
         self.assertTrue(num_legal_moves > 0)
         self.assertFalse(self.env.is_game_over(start_state))
 
@@ -55,4 +55,12 @@ class TestKQKChessEnv(unittest.TestCase):
         start_state[0, 2, 0] = 1
         start_state[5, 5, 1] = 1
         start_state[0, 0, 2] = 1
-        self.assertEqual(self.env.get_legal_actions(start_state).size, 1)
+        self.assertEqual(len(self.env.get_legal_actions(start_state)), 1)
+
+    def test_convert_action_to_int(self):
+        action = np.zeros((8, 8, 8, 8, 3), dtype=int)
+        action[3, 3, 4, 4, 2] = 1
+        action_int = self.env.convert_action_to_int(action)
+        recovered_action = self.env.convert_int_to_action(action_int)
+        self.assertEqual(type(action_int), np.int64)
+        self.assertEqual(action[3, 3, 4, 4, 2], recovered_action[3, 3, 4, 4, 2])
