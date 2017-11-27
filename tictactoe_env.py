@@ -94,7 +94,7 @@ class TicTacToeEnv(object):
 
     def convert_int_to_action(self, action_int):
         """
-        Conver the action index (an integer) into the
+        Convert the action index (an integer) into the
         array representation of the action
         """
         action_array = np.zeros((self.action_dims), dtype=int)
