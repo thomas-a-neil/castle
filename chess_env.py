@@ -29,7 +29,7 @@ def map_square_to_xy(square):
     return int(square % 8), int(square // 8)
 
 
-class KQKChessEnv(object):
+class ChessEnv(object):
     """
     The full chess environment.
     """
