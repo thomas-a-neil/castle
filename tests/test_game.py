@@ -68,3 +68,6 @@ class TestKQKChessGame(unittest.TestCase):
                                        c_puct,
                                        temperature,
                                        max_num_turns=5)
+        self.assertEqual(len(v), 6)
+        self.assertEqual(len(states), 6)
+        self.assertEqual(len(pi), 6)
