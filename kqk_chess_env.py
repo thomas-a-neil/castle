@@ -52,7 +52,7 @@ class KQKChessEnv(object):
         self.action_regime = action_regime
         if action_regime == 'KQK_pos_pos_piece':
             self.action_dims = (8, 8, 8, 8, 3)
-            #TensorFlow doesn't like being passed np.int64, so cast as int
+            # TensorFlow doesn't like being passed np.int64, so cast as int
             self.action_size = int(np.prod(self.action_dims))
         elif action_regime == 'KQK_pos_pos':
             self.action_dims = (8, 8, 8, 8)
@@ -68,12 +68,11 @@ class KQKChessEnv(object):
 
     def get_legal_actions(self, state):
         board = self.map_state_to_board(state)
-        legal_moves = board.legal_moves
-        legal_actions = np.zeros(len(legal_moves), dtype=int)
+        legal_actions = []
         i = 0
-        for move in legal_moves:
+        for move in board.legal_moves:
             action = self.map_move_to_action(board, move)
-            legal_actions[i] = action
+            legal_actions.append(action)
             i += 1
         return legal_actions
 
@@ -110,7 +109,7 @@ class KQKChessEnv(object):
 
     def convert_action_to_int(self, action_array):
         action_array = np.reshape(action_array, -1)
-        return np.where(action_array == 1)[0]
+        return np.argmax(action_array)
 
     def convert_int_to_action(self, action_int):
         action_array = np.zeros((self.action_dims), dtype=int)

@@ -54,8 +54,7 @@ def expand_node(node, model, env):
     action_probs = vec_action_probs[0]
     value = values[0]
     legal_actions = env.get_legal_actions(node.state)
-    for i in range(legal_actions.size):
-        action = legal_actions[i]
+    for i, action in enumerate(legal_actions):
         action_prob = action_probs[i]
         next_state = env.get_next_state(node.state, action)
         child_node = Node(next_state)

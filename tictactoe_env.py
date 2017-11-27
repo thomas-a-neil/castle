@@ -86,12 +86,17 @@ class TicTacToeEnv(object):
 
     def convert_action_to_int(self, action_array):
         """
-        action_array is 2x3x3
+        Return an integer representing the index of the chosen action
+        in the dimension of space 2x3x3.
         """
         action_array = np.reshape(action_array, -1)
-        return np.where(action_array == 1)[0]
+        return np.argmax(action_array)
 
     def convert_int_to_action(self, action_int):
+        """
+        Convert the action index (an integer) into the
+        array representation of the action
+        """
         action_array = np.zeros((self.action_dims), dtype=int)
         action_array = np.reshape(action_array, -1)
         action_array[action_int] = 1

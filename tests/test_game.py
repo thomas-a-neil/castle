@@ -3,11 +3,9 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from chess_env import ChessEnv
-from kqk_chess_env import KQKChessEnv
 from dual_net import DualNet
-from kqk_chess_env import KQK_CHESS_INPUT_SHAPE, KQK_POSITION_POSITION_PIECE_ACTION_SIZE
 from game import self_play_game
+from kqk_chess_env import KQKChessEnv, KQK_CHESS_INPUT_SHAPE
 
 from utils import numline_env, mock_model_numline
 
