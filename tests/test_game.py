@@ -10,7 +10,7 @@ from kqk_chess_env import KQK_CHESS_INPUT_SHAPE, KQK_POSITION_POSITION_PIECE_ACT
 from game import self_play_game
 
 from utils import numline_env, mock_model_numline
-
+from tictactoe_env import TicTacToeEnv
 
 class TestNumlineGame(unittest.TestCase):
     def test_numline_game(self):
@@ -28,6 +28,28 @@ class TestNumlineGame(unittest.TestCase):
                                        c_puct,
                                        temperature,
                                        max_num_turns=5)
+
+class TestTicTacToe(unittest.TestCase):
+    def setUp(self):
+        self.env = TicTacToeEnv()
+        sess = tf.Session()
+        self.network = DualNet(sess, self.env)
+        sess.__enter__()
+        tf.global_variables_initializer().run()
+        self.start_state = np.zeros((2, 3, 3))
+
+    def test_tictactoe(self):
+        n_leaf_expansions = 10
+        c_puct = 1000
+        temperature = 1
+        states, v, pi = self_play_game(self.network,
+                                       self.env,
+                                       self.start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=10,
+                                       verbose_print_board=True)
 
 
 class TestKQKChessGame(unittest.TestCase):
@@ -70,3 +92,4 @@ class TestKQKChessGame(unittest.TestCase):
                                        c_puct,
                                        temperature,
                                        max_num_turns=5)
+

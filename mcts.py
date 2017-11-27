@@ -4,7 +4,6 @@ import numpy as np
 
 from tree import Node, create_new_connection
 
-
 def exploration_bonus_for_c_puct(edge, c_puct):
     """
     Determines a score for an edge that favors exploration
@@ -56,7 +55,14 @@ def expand_node(node, model, env):
     legal_actions = env.get_legal_actions(node.state)
     for i in range(legal_actions.size):
         action = legal_actions[i]
-        action_prob = action_probs[i]
+
+        '''
+        the index here is important (not i!).
+        action_probs is a vector of length action_size
+        action is a legal action and it is an index into the action_probs
+        '''  
+        action_prob = action_probs[int(action)]
+
         next_state = env.get_next_state(node.state, action)
         child_node = Node(next_state)
         create_new_connection(node, child_node, action, action_prob)
@@ -86,14 +92,22 @@ def perform_rollouts(root_node,
         how good the edge is to explore with our exploration rate.
     """
     cur_node = root_node
+
     # add all edges and children for current node
+
     value = expand_node(root_node, model, env)
     while n_leaf_expansions > 0:
         # expand root
         edge = select(root_node, exploration_bonus)
-        while edge.num_visits != 0:
+        end_node_reached = False
+        while edge.num_visits != 0 and not end_node_reached:
             cur_node = edge.out_node
-            edge = select(cur_node, exploration_bonus)
+            if len(cur_node.outgoing_edges) > 0:
+                # To expand a node means to enumerate all possible actions from that node
+                # and put them in the tree.  If a node has no outgoing_edges after being expanded, then it has no available actions
+                edge = select(cur_node, exploration_bonus)
+            else:
+                end_node_reached = True
         cur_node = edge.out_node
         # find a node you haven't expanded yet, expand it
         value = expand_node(cur_node, model, env)
@@ -131,7 +145,6 @@ def get_action_distribution(start_state,
     """
     # set up the exploration_bonus function with the constant specified
     exploration_bonus = partial(exploration_bonus_for_c_puct, c_puct=c_puct)
-
     root_node = Node(start_state)
     perform_rollouts(root_node, n_leaf_expansions, model, env, exploration_bonus)
     visit_counts = np.array([edge.num_visits for edge in root_node.outgoing_edges])
@@ -144,7 +157,11 @@ def get_action_distribution(start_state,
     # our distribution is only over legal actions, some subset of the action space
     # all illegal actions have zero probability due to being unexplored
     total_action_distribution = np.zeros(env.action_size)
-    action_indexes = [edge.action for edge in root_node.outgoing_edges]
-    total_action_distribution[action_indexes] = distribution
+    try:
+        action_indexes = [edge.action for edge in root_node.outgoing_edges]
+        total_action_distribution[action_indexes] = distribution
+    except:
+        action_indexes = [edge.action[0] for edge in root_node.outgoing_edges]
+        total_action_distribution[action_indexes] = distribution
 
     return total_action_distribution

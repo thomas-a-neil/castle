@@ -10,11 +10,21 @@ class TicTacToeEnv(object):
         assume x's always go first
         """
         self.action_dims = (2, 3, 3)
+        self.action_size = int(np.prod(self.action_dims))
+        self.input_shape = (2, 3, 3)
 
     def get_next_state(self, state, action_int):
         action_array = self.convert_int_to_action(action_int)
         next_state = state + action_array
         return next_state
+
+    def get_legality_mask(self, state):
+        legal_actions = np.zeros(self.action_dims)
+        turn_index = 0 if self.is_x_turn(state) else 1
+        for i in range(3):
+            for j in range(3):
+                legal_actions[turn_index, i, j] = 1
+        return np.reshape(legal_actions, -1)
 
     def get_legal_actions(self, state):
         turn_index = 0 if self.is_x_turn(state) else 1
@@ -66,9 +76,9 @@ class TicTacToeEnv(object):
         num_xs = state[0, :, :].sum()
         num_os = state[1, :, :].sum()
         if num_os == num_xs:
-            return 0
-        elif num_xs > num_os:
             return 1
+        elif num_xs > num_os:
+            return 0
         else:
             raise InvalidStateException(state)
 
@@ -83,6 +93,7 @@ class TicTacToeEnv(object):
                 else:
                     row += '* '
             print(row)
+        print('')
 
     def convert_action_to_int(self, action_array):
         """
