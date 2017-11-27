@@ -1,9 +1,17 @@
 import unittest
 
-import numpy as np
 import chess
 
 from chess_env import ChessEnv
+
+INITIAL_BLACK_PAWNS_STRING = ('[[ 0.  0.  0.  0.  0.  0.  0.  0.]\n'
+                              ' [ 1.  1.  1.  1.  1.  1.  1.  1.]\n'
+                              ' [ 0.  0.  0.  0.  0.  0.  0.  0.]\n'
+                              ' [ 0.  0.  0.  0.  0.  0.  0.  0.]\n'
+                              ' [ 0.  0.  0.  0.  0.  0.  0.  0.]\n'
+                              ' [ 0.  0.  0.  0.  0.  0.  0.  0.]\n'
+                              ' [ 0.  0.  0.  0.  0.  0.  0.  0.]\n'
+                              ' [ 0.  0.  0.  0.  0.  0.  0.  0.]]')
 
 
 class TestChessEnv(unittest.TestCase):
@@ -23,7 +31,7 @@ class TestChessEnv(unittest.TestCase):
         board = chess.Board()
         state = self.env.map_board_to_state(board)
         # Checks top two rows of the black pawn layer
-        self.assertEqual(str(state[0:2,:,11]), '[[ 0.  0.  0.  0.  0.  0.  0.  0.]\n [ 1.  1.  1.  1.  1.  1.  1.  1.]]')
+        self.assertEqual(str(state[:, :, 11]), INITIAL_BLACK_PAWNS_STRING)
 
     def test_state_to_board(self):
         board = chess.Board()

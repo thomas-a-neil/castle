@@ -110,7 +110,7 @@ class ChessEnv(object):
                     continue
                 state[i][j][CHAR_TO_INDEX_MAP[char]] = 1
         if board.turn:
-            state[:,:,12] = np.ones(shape=(8,8))
+            state[:, :, 12] = np.ones(shape=(8, 8))
         return state
 
     def map_state_to_board(self, state):
@@ -169,8 +169,7 @@ class ChessEnv(object):
         if self.action_size == POSITION_POSITION_ACTION_SIZE:
             return 64 * from_pos + to_pos
         elif self.action_size == PIECE_POSITION_ACTION_SIZE:
-            # not implemented
-            pass
+            raise NotImplementedError
 
     def position_to_index(self, position):
         """
