@@ -1,6 +1,15 @@
 import numpy as np
 
-from mcts import get_action_distribution
+from mcts import get_action_distribution, get_action_distribution_and_choose_action
+from tree import Node
+
+def random_play_game(env, start_state):
+    state = start_state
+    while not env.is_game_over(state):
+        random_action = np.random.choice(env.get_legal_actions(state))
+        state = env.get_next_state(state, random_action)
+    winner = env.outcome(state)
+    return state, np.array([winner])
 
 def self_play_game(model,
                    env,
@@ -42,19 +51,28 @@ def self_play_game(model,
     action_distributions = []
 
     num_turns = 0
+    cur_node = Node(state)
     while not env.is_game_over(state) and num_turns <= max_num_turns:
         if verbose_print_board:
-            env.print_board(state)
-        distribution = get_action_distribution(state, temperature, n_leaf_expansions, model, env, c_puct)
-
+            env.print_board(cur_node.state)
+        cur_node, distribution = get_action_distribution_and_choose_action(cur_node, temperature, n_leaf_expansions, model, env, c_puct)
+        
         states.append(state)
         action_distributions.append(distribution)
+        state = cur_node.state
 
-        chosen_action = np.random.choice(np.arange(env.action_size), p=distribution)
-        state = env.get_next_state(state, chosen_action)
+        # distribution = get_action_distribution(state, temperature, n_leaf_expansions, model, env, c_puct)
+
+        # states.append(state)
+        # action_distributions.append(distribution)
+
+        # chosen_action = np.random.choice(np.arange(env.action_size), p=distribution)
+        # state = env.get_next_state(state, chosen_action)
 
 
         num_turns += 1
+        # print('num_turns', num_turns)
+    last_state = state
     if verbose_print_board:
         env.print_board(state)
 
@@ -63,4 +81,4 @@ def self_play_game(model,
     default_v = np.array(default_v)
     v = winner * default_v
     action_distributions = np.array(action_distributions)
-    return states, v, action_distributions
+    return states, v, action_distributions, [last_state], np.array([winner])

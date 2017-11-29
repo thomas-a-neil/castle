@@ -114,6 +114,34 @@ def perform_rollouts(root_node,
 
         n_leaf_expansions -= 1
 
+def get_action_distribution_and_choose_action(cur_node,
+                            temperature,
+                            n_leaf_expansions,
+                            model,
+                            env,
+                            c_puct):
+    # set up the exploration_bonus function with the constant specified
+    exploration_bonus = partial(exploration_bonus_for_c_puct, c_puct=c_puct)
+    # root_node = Node(start_state)
+    perform_rollouts(cur_node, n_leaf_expansions, model, env, exploration_bonus)
+    visit_counts = np.array([edge.num_visits for edge in cur_node.outgoing_edges])
+
+    # scale by temperature
+    distribution = np.power(visit_counts, 1/temperature)
+    # normalize
+    distribution = distribution / np.sum(distribution)
+
+    # our distribution is only over legal actions, some subset of the action space
+    # all illegal actions have zero probability due to being unexplored
+    total_action_distribution = np.zeros(env.action_size)
+    action_indexes = [edge.action for edge in cur_node.outgoing_edges]
+    total_action_distribution[action_indexes] = distribution
+
+    # now pick an action -- distribution is of size of the number of legal actions from the current node
+    chosen_action = np.random.choice(np.arange(len(cur_node.outgoing_edges)), p=distribution)
+    next_node = cur_node.outgoing_edges[chosen_action].out_node
+
+    return next_node, total_action_distribution
 
 def get_action_distribution(start_state,
                             temperature,

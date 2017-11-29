@@ -23,7 +23,8 @@ class TicTacToeEnv(object):
         turn_index = 0 if self.is_x_turn(state) else 1
         for i in range(3):
             for j in range(3):
-                legal_actions[turn_index, i, j] = 1
+                if state[:, i, j].sum() == 0:
+                    legal_actions[turn_index, i, j] = 1
         return np.reshape(legal_actions, -1)
 
     def get_legal_actions(self, state):

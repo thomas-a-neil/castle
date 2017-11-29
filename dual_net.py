@@ -4,7 +4,7 @@ import tensorflow.contrib.layers as layers
 import numpy as np
 import chess
 
-from chess_env import FULL_CHESS_INPUT_SHAPE
+from chess_env import FULL_CHESS_INPUT_SHAPE, POSITION_POSITION_ACTION_SIZE
 
 
 # A convolutional block as described in AlphaGo Zero
@@ -70,7 +70,8 @@ def build_model(board_placeholder,
             out = layers.flatten(out)
             out = layers.fully_connected(out,
                                          num_outputs=specs['num_outputs'],
-                                         activation_fn=specs['activation_fn'])
+                                         activation_fn=specs['activation_fn'],
+                                         weights_initializer=tf.initializers.random_normal)
     # Policy head
     policy_out = out
     for specs in policy_head:
@@ -80,7 +81,8 @@ def build_model(board_placeholder,
             policy_out = layers.flatten(policy_out)
             policy_out = layers.fully_connected(policy_out,
                                                 num_outputs=specs['num_outputs'],
-                                                activation_fn=specs['activation_fn'])
+                                                activation_fn=specs['activation_fn'],
+                                                weights_initializer=tf.random_normal_initializer)
 
     x = tf.exp(policy_out) * legality_mask_placeholder
     # Needs reshape to broadcast properly
@@ -95,7 +97,8 @@ def build_model(board_placeholder,
             value_out = layers.flatten(value_out)
             value_out = layers.fully_connected(value_out,
                                                num_outputs=specs['num_outputs'],
-                                               activation_fn=specs['activation_fn'])
+                                               activation_fn=specs['activation_fn'],
+                                               weights_initializer=tf.random_normal_initializer)
     return policy_out, value_out
 
 
@@ -107,8 +110,8 @@ class DualNet(object):
                  learning_rate=0.01,
                  regularization_mult=0.01,
                  n_residual_layers=2,
-                 #input_shape=FULL_CHESS_INPUT_SHAPE,
-                 #action_size=POSITION_POSITION_ACTION_SIZE,
+                 input_shape=FULL_CHESS_INPUT_SHAPE,
+                 action_size=POSITION_POSITION_ACTION_SIZE,
                  num_convolutional_filters=256
                  ):
         """
@@ -122,7 +125,14 @@ class DualNet(object):
                                    each convolutional layer
         """
         self.action_size = env.action_size
-        self.board_placeholder = tf.placeholder(tf.float32, [None] + list(env.input_shape))
+        # self.board_placeholder = tf.placeholder(tf.float32, [None] + list(env.input_shape))
+
+
+
+
+
+
+        self.board_placeholder = tf.placeholder(tf.float32, [None] + list(input_shape))
         self.env = env
 
         shared_layers = [{'layer': 'conv', 'num_outputs':
@@ -145,6 +155,26 @@ class DualNet(object):
                         {'layer': 'fc', 'num_outputs': 1,
                          'activation_fn': tf.nn.tanh}]
 
+
+
+
+
+
+        # shared_layers = [{'layer': 'conv', 'num_outputs':
+        #                   num_convolutional_filters, 'stride': 5,
+        #                   'kernel_size': 3, 'activation_fn': None}]
+        # shared_layers = []
+        # policy_layers = [{'layer': 'fc', 'num_outputs': self.action_size,
+        #                   'activation_fn': tf.nn.sigmoid}]
+        # value_layers = [{'layer': 'conv', 'num_outputs': 100, 'stride': 1,
+        #                  'kernel_size': 2, 'activation_fn': None},
+        #                 {'layer': 'fc', 'num_outputs': 1,
+        #                  'activation_fn': tf.nn.tanh}]
+        # value_layers = [{'layer': 'fc', 'num_outputs': 6,
+        #                   'activation_fn': None},
+        #                 {'layer': 'fc', 'num_outputs': 1,
+        #                  'activation_fn': tf.nn.tanh}]
+
         self.boards = None
         self.move_legality_mask = tf.placeholder(tf.float32, [None, self.action_size])
         self.policy_predict, self.value_predict = build_model(self.board_placeholder,
@@ -154,17 +184,19 @@ class DualNet(object):
                                                               policy_head=policy_layers,
                                                               value_head=value_layers)
         self.z = tf.placeholder(tf.float32, [None])
-        self.pi = tf.placeholder(tf.float32, [None, self.action_size])
         self.value_loss = tf.reduce_sum(tf.square(self.value_predict - self.z))
+        self.value_update_op = tf.train.AdamOptimizer(learning_rate).minimize(self.value_loss)
 
+        self.pi = tf.placeholder(tf.float32, [None, self.action_size])
         # when the 0s become 0.000001s for illegal actions, we are counting on the fact that the are
         # nullified by the corresponding index of self.pi to be 0
-        self.policy_loss = tf.reduce_sum(tf.multiply(self.pi, tf.log(self.policy_predict + 0.0001)))
+        self.policy_loss = -tf.reduce_sum(tf.multiply(self.pi, tf.log(self.policy_predict + 0.0001)))
 
         self.regularization_loss = layers.apply_regularization(layers.l2_regularizer(regularization_mult),
                                                                weights_list=tf.trainable_variables())
-        self.loss = self.value_loss - self.policy_loss + tf.reduce_sum(self.regularization_loss)
+        self.loss = self.value_loss + self.policy_loss + tf.reduce_sum(self.regularization_loss)
         self.update_op = tf.train.AdamOptimizer(learning_rate).minimize(self.loss)
+        
         self.sess = sess
 
     def __call__(self, inp):
@@ -196,9 +228,42 @@ class DualNet(object):
               move_legality_mask[i] = self.env.get_legality_mask(states[i])
         else:
           move_legality_mask = token_legality_mask
-        _, loss = self.sess.run([self.update_op, self.loss], feed_dict={self.board_placeholder: states,
+        _, loss, value_loss, policy_loss, regularization_loss, value_predict, policy_predict = self.sess.run([self.update_op, self.loss,
+           self.value_loss, self.policy_loss, self.regularization_loss, self.value_predict, self.policy_predict], feed_dict={self.board_placeholder: states,
                                                    self.pi: pi,
                                                    self.z: z,
                                                    self.move_legality_mask: move_legality_mask})
 
-        return loss
+        return loss, value_loss, policy_loss, regularization_loss, value_predict, policy_predict
+
+    def train_value(self, states, z, token_legality_mask=None):
+      if token_legality_mask is None:
+        move_legality_mask = np.zeros(shape=(len(states), self.action_size))
+        for i in range(len(states)):
+            move_legality_mask[i] = self.env.get_legality_mask(states[i])
+      else:
+        move_legality_mask = token_legality_mask
+      _, value_loss, value_predict = self.sess.run([self.value_update_op,
+         self.value_loss, self.value_predict], feed_dict={self.board_placeholder: np.swapaxes(states,1,3),
+                                                 self.z: z,
+                                                 self.move_legality_mask: move_legality_mask})
+
+      return value_loss, value_predict
+
+    def test_value(self, states, z, token_legality_mask=None):
+      if token_legality_mask is None:
+        move_legality_mask = np.zeros(shape=(len(states), self.action_size))
+        for i in range(len(states)):
+            move_legality_mask[i] = self.env.get_legality_mask(states[i])
+      else:
+        move_legality_mask = token_legality_mask
+      value_loss = self.sess.run([self.value_loss], 
+                                                 feed_dict={self.board_placeholder: np.swapaxes(states,1,3),
+                                                 self.z: z,
+                                                 self.move_legality_mask: move_legality_mask})
+
+      return value_loss
+
+
+
+
