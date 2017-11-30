@@ -119,11 +119,11 @@ class TestPrediction(unittest.TestCase):
 
     def test_diff_loss(self):
         '''
-        this is a randomized test 
+        this is a randomized test
         we examine 2 different scenarios
         1. all actions are legal
         2. only 3 actions are legal
-        on average, after 50 training steps, scenario 1 should decrease its loss by a larger margin than scenario 2 
+        on average, after 50 training steps, scenario 1 should decrease its loss by a larger margin than scenario 2
             because fewer actions are zeroed out by the mask
         '''
 
@@ -172,6 +172,11 @@ class TestPrediction(unittest.TestCase):
         for j in range(num_iters):
             losses[j] = net.train(states, pi, self.z)
         self.assertGreater(losses[0], losses[-1])
+
+    def test_value_loss_shape(self):
+        value_diff = self.net.sess.run(self.net.value_diff, feed_dict={self.net.board_placeholder: self.boards,
+                                                 self.net.z: self.z})
+        self.assertEqual(value_diff.shape, (10, 1))
 
 
 if __name__ == '__main__':
