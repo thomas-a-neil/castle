@@ -154,8 +154,11 @@ class DualNet(object):
                                                               policy_head=policy_layers,
                                                               value_head=value_layers)
         self.z = tf.placeholder(tf.float32, [None])
+        # Reshape z for proper broadcasting
+        reshaped_z = tf.reshape(self.z, [tf.shape(self.z)[0], 1])
         self.pi = tf.placeholder(tf.float32, [None, self.action_size])
-        self.value_loss = tf.reduce_sum(tf.square(self.value_predict - self.z))
+        self.value_diff = self.value_predict - reshaped_z
+        self.value_loss = tf.reduce_sum(tf.square(self.value_diff))
 
         # when the 0s become 0.000001s for illegal actions, we are counting on the fact that the are
         # nullified by the corresponding index of self.pi to be 0
