@@ -55,6 +55,7 @@ def self_play_game(model,
 
     winner = env.outcome(state) if num_turns <= max_num_turns else 0
     default_v = [1, -1] * (num_turns // 2) + [1] * (num_turns % 2)
-    v = [winner * value for value in default_v]
+    default_v = np.array(default_v)
+    v = winner * default_v
     action_distributions = np.array(action_distributions)
     return states, v, action_distributions
