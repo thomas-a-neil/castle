@@ -66,13 +66,14 @@ class TicTacToeEnv(object):
         num_xs = state[0, :, :].sum()
         num_os = state[1, :, :].sum()
         if num_os == num_xs:
-            return 0
+            return True
         elif num_xs > num_os:
-            return 1
+            return False
         else:
             raise InvalidStateException(state)
 
     def print_board(self, state):
+        print('-----')
         for i in range(3):
             row = ''
             for j in range(3):

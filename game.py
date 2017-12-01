@@ -9,7 +9,8 @@ def self_play_game(model,
                    n_leaf_expansions,
                    c_puct=1.0,
                    temperature=1,
-                   max_num_turns=40):
+                   max_num_turns=40,
+                   verbose=False):
     """
     Plays a game (defined by the env), where a model with MCTS action distribution improvement plays
     itself. Returns a tuple of (states, winner_vector, action_distributions)
@@ -34,6 +35,8 @@ def self_play_game(model,
         how much to explore low probability states
     max_num_turns: int
         maximum number of turns to play out before stopping the game
+    verbose: boolean
+        If set to True, print the board state after each move
     """
     state = start_state
     # vector of states
@@ -43,6 +46,9 @@ def self_play_game(model,
 
     num_turns = 0
     while not env.is_game_over(state) and num_turns <= max_num_turns:
+        if verbose:
+            env.print_board(state)
+
         distribution = get_action_distribution(start_state, temperature, n_leaf_expansions, model, env, c_puct)
 
         states.append(state)
@@ -53,9 +59,60 @@ def self_play_game(model,
 
         num_turns += 1
 
+    if verbose:
+        env.print_board(state)
+
     winner = env.outcome(state) if num_turns <= max_num_turns else 0
     default_v = [1, -1] * (num_turns // 2) + [1] * (num_turns % 2)
     default_v = np.array(default_v)
     v = winner * default_v
     action_distributions = np.array(action_distributions)
     return states, v, action_distributions
+
+
+def random_play_game(env,
+                     start_state,
+                     max_num_turns=40,
+                     verbose=False):
+    """
+    Plays a game (defined by the env), where a random action is taken each turn
+    Returns a tuple of (states, winner_vector)
+
+    Where each is a vector of length equal to the number of turns played in the game.
+    The winner vector is a vector of either the value 1, -1, or 0 for an eventual win, loss, or tie.
+
+    Parameters
+    ----------
+    start_state:
+        an initial game state (as defined by the environment)
+    env:
+        game playing environment that can progress game state and give us legal moves
+    max_num_turns: int
+        maximum number of turns to play out before stopping the game
+    verbose: boolean
+        If set to True, print the board state after each move
+    """
+    state = start_state
+    # vector of states
+    states = []
+
+    num_turns = 0
+    while not env.is_game_over(state) and num_turns <= max_num_turns:
+        if verbose:
+            env.print_board(state)
+
+        states.append(state)
+
+        action = np.random.choice(env.get_legal_actions(state))
+        state = env.get_next_state(state, action)
+
+        num_turns += 1
+
+    if verbose:
+        env.print_board(state)
+
+    winner = env.outcome(state) if num_turns <= max_num_turns else 0
+    default_v = [1, -1] * (num_turns // 2) + [1] * (num_turns % 2)
+    default_v = np.array(default_v)
+    v = winner * default_v
+    return states, v
