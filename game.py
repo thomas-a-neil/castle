@@ -59,7 +59,6 @@ def self_play_game(model,
 
         num_turns += 1
 
-    last_state = cur_node.state
     if verbose:
         env.print_board(cur_node.state)
 
@@ -69,7 +68,7 @@ def self_play_game(model,
     v = winner * default_v
     states = np.array(states)
     action_distributions = np.array(action_distributions)
-    return states, v, action_distributions, last_state
+    return states, v, action_distributions
 
 
 def random_play_game(env,
@@ -109,7 +108,6 @@ def random_play_game(env,
 
         num_turns += 1
 
-    last_state = state
     if verbose:
         env.print_board(state)
 
@@ -118,4 +116,4 @@ def random_play_game(env,
     default_v = np.array(default_v)
     v = winner * default_v
     states = np.array(states)
-    return states, v, last_state
+    return states, v

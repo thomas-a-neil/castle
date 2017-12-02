@@ -20,13 +20,13 @@ class TestNumlineGame(unittest.TestCase):
         n_leaf_expansions = 10
         c_puct = 1000
         temperature = 1
-        states, v, pi, last_state = self_play_game(model,
-                                                   env,
-                                                   start_state,
-                                                   n_leaf_expansions,
-                                                   c_puct,
-                                                   temperature,
-                                                   max_num_turns=5)
+        states, v, pi = self_play_game(model,
+                                       env,
+                                       start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=5)
 
 
 class TestTicTacToeGame(unittest.TestCase):
@@ -35,7 +35,7 @@ class TestTicTacToeGame(unittest.TestCase):
 
     def test_ttt_game(self):
         start_state = np.zeros((2, 3, 3), dtype=int)
-        states, v, last_state = random_play_game(self.env, start_state)
+        states, v = random_play_game(self.env, start_state)
         self.assertLessEqual(len(states), 9)
         self.assertGreaterEqual(len(states), 5)
 
@@ -73,13 +73,13 @@ class TestKQKChessGame(unittest.TestCase):
         n_leaf_expansions = 10
         c_puct = 1000
         temperature = 1
-        states, v, pi, last_state = self_play_game(self.network,
-                                                   self.env,
-                                                   self.start_state,
-                                                   n_leaf_expansions,
-                                                   c_puct,
-                                                   temperature,
-                                                   max_num_turns=5)
+        states, v, pi = self_play_game(self.network,
+                                       self.env,
+                                       self.start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=5)
         self.assertEqual(len(v), 6)
         self.assertEqual(len(states), 6)
         self.assertEqual(len(pi), 6)
