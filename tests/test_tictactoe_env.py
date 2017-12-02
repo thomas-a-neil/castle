@@ -145,13 +145,6 @@ class TestTicTacToeEnv(unittest.TestCase):
         self.assertEqual(self.env.is_game_over(next_state), 1)
         self.assertEqual(self.env.outcome(next_state), -1)
 
-    def test_invalid_state(self):
-        invalid_state = np.zeros((2, 3, 3), dtype=int)
-        # one o. x must move before o
-        invalid_state[1, 0, 1] = 1
-        with self.assertRaises(InvalidStateException):
-            self.env.is_x_turn(invalid_state)
-
     def test_convert_action_to_int(self):
         action = np.zeros((2, 3, 3), dtype=int)
         action[1, 0, 2] = 1
@@ -159,3 +152,17 @@ class TestTicTacToeEnv(unittest.TestCase):
         recovered_action = self.env.convert_int_to_action(action_int)
         self.assertEqual(type(action_int), np.int64)
         self.assertEqual(action[1, 0, 2], recovered_action[1, 0, 2])
+
+    def test_is_x_turn(self):
+        state = np.zeros((2, 3, 3), dtype=int)
+        state[1, 0, 2] = 1
+
+        # x must move before o
+        with self.assertRaises(InvalidStateException):
+            self.env.is_x_turn(state)
+
+        state[0, 0, 1] = 1
+        self.assertTrue(self.env.is_x_turn(state))
+
+        state[0, 0, 0] = 1
+        self.assertFalse(self.env.is_x_turn(state))
