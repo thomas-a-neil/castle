@@ -14,9 +14,9 @@ def self_play_game(model,
                    verbose=False):
     """
     Plays a game (defined by the env), where a model with MCTS action distribution improvement plays
-    itself. Returns a tuple of (states, winner_vector, action_distributions, last_state)
+    itself. Returns a tuple of (states, winner_vector, action_distributions)
 
-    tates, winner_vector, action_distributions are vectors of length equal to the number of turns played in the game.
+    states, winner_vector, action_distributions are vectors of length equal to the number of turns played in the game.
     The winner vector is a vector of either the value 1, -1, or 0 for an eventual win, loss, or tie.
     Last state is not a vector, just a single state.
 
@@ -77,7 +77,7 @@ def random_play_game(env,
                      verbose=False):
     """
     Plays a game (defined by the env), where a random action is taken each turn
-    Returns a tuple of (states, winner_vector, last_state)
+    Returns a tuple of (states, winner_vector)
 
     states and winner_vector are vectors of length equal to the number of turns played in the game.
     The winner vector is a vector of either the value 1, -1, or 0 for an eventual win, loss, or tie.
