@@ -60,6 +60,7 @@ def expand_node(node, model, env):
         child_node = Node(next_state)
         create_new_connection(node, child_node, action, action_prob)
     # need to take [0] index of value since value is an array of dimension 1
+    node.is_expanded = True
     return value[0]
 
 
@@ -86,7 +87,9 @@ def perform_rollouts(root_node,
     """
     cur_node = root_node
     # add all edges and children for current node
-    value = expand_node(root_node, model, env)
+    if not root_node.is_expanded:
+        value = expand_node(root_node, model, env)
+
     while n_leaf_expansions > 0:
         # expand root
         edge = select(root_node, exploration_bonus)
@@ -101,7 +104,7 @@ def perform_rollouts(root_node,
         n_leaf_expansions -= 1
 
 
-def get_action_distribution(start_state,
+def get_action_distribution(root_node,
                             temperature,
                             n_leaf_expansions,
                             model,
@@ -131,7 +134,6 @@ def get_action_distribution(start_state,
     # set up the exploration_bonus function with the constant specified
     exploration_bonus = partial(exploration_bonus_for_c_puct, c_puct=c_puct)
 
-    root_node = Node(start_state)
     perform_rollouts(root_node, n_leaf_expansions, model, env, exploration_bonus)
     visit_counts = np.array([edge.num_visits for edge in root_node.outgoing_edges])
 
@@ -145,5 +147,21 @@ def get_action_distribution(start_state,
     total_action_distribution = np.zeros(env.action_size)
     action_indexes = [edge.action for edge in root_node.outgoing_edges]
     total_action_distribution[action_indexes] = distribution
-
     return total_action_distribution
+
+
+def get_next_state_with_mcts(root_node,
+                             temperature,
+                             n_leaf_expansions,
+                             model,
+                             env,
+                             c_puct):
+    """
+    Returns a tuple of (next_node, action_distribution) used to choose the action taken at the
+    root node.
+    """
+    distribution = get_action_distribution(root_node, temperature, n_leaf_expansions, model, env, c_puct)
+    action = np.random.choice(env.action_size, p=distribution)
+    edge = [edge for edge in root_node.outgoing_edges if edge.action == action]
+    next_node = edge[0].out_node
+    return next_node, distribution

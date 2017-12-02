@@ -1,6 +1,7 @@
 import numpy as np
 
-from mcts import get_action_distribution
+from mcts import get_next_state_with_mcts
+from tree import Node
 
 
 def self_play_game(model,
@@ -13,10 +14,11 @@ def self_play_game(model,
                    verbose=False):
     """
     Plays a game (defined by the env), where a model with MCTS action distribution improvement plays
-    itself. Returns a tuple of (states, winner_vector, action_distributions)
+    itself. Returns a tuple of (states, winner_vector, action_distributions, last_state)
 
-    Where each is a vector of length equal to the number of turns played in the game.
+    tates, winner_vector, action_distributions are vectors of length equal to the number of turns played in the game.
     The winner vector is a vector of either the value 1, -1, or 0 for an eventual win, loss, or tie.
+    Last state is not a vector, just a single state.
 
     Parameters
     ----------
@@ -39,35 +41,35 @@ def self_play_game(model,
         If set to True, print the board state after each move
     """
     state = start_state
+    cur_node = Node(state)
     # vector of states
     states = []
     # vector of action distributions for each game state
     action_distributions = []
 
     num_turns = 0
-    while not env.is_game_over(state) and num_turns <= max_num_turns:
+    while not env.is_game_over(cur_node.state) and num_turns <= max_num_turns:
+        states.append(cur_node.state)
         if verbose:
-            env.print_board(state)
+            env.print_board(cur_node.state)
 
-        distribution = get_action_distribution(start_state, temperature, n_leaf_expansions, model, env, c_puct)
-
-        states.append(state)
+        # we pass nodes in to keep work done in previous mcts rollouts.
+        cur_node, distribution = get_next_state_with_mcts(cur_node, temperature, n_leaf_expansions, model, env, c_puct)
         action_distributions.append(distribution)
-
-        chosen_action = np.random.choice(np.arange(env.action_size), p=distribution)
-        state = env.get_next_state(state, chosen_action)
 
         num_turns += 1
 
+    last_state = cur_node.state
     if verbose:
-        env.print_board(state)
+        env.print_board(cur_node.state)
 
-    winner = env.outcome(state) if num_turns <= max_num_turns else 0
+    winner = env.outcome(cur_node.state) if num_turns <= max_num_turns else 0
     default_v = [1, -1] * (num_turns // 2) + [1] * (num_turns % 2)
     default_v = np.array(default_v)
     v = winner * default_v
+    states = np.array(states)
     action_distributions = np.array(action_distributions)
-    return states, v, action_distributions
+    return states, v, action_distributions, last_state
 
 
 def random_play_game(env,
@@ -76,9 +78,9 @@ def random_play_game(env,
                      verbose=False):
     """
     Plays a game (defined by the env), where a random action is taken each turn
-    Returns a tuple of (states, winner_vector)
+    Returns a tuple of (states, winner_vector, last_state)
 
-    Where each is a vector of length equal to the number of turns played in the game.
+    states and winner_vector are vectors of length equal to the number of turns played in the game.
     The winner vector is a vector of either the value 1, -1, or 0 for an eventual win, loss, or tie.
 
     Parameters
@@ -98,16 +100,16 @@ def random_play_game(env,
 
     num_turns = 0
     while not env.is_game_over(state) and num_turns <= max_num_turns:
+        states.append(state)
         if verbose:
             env.print_board(state)
-
-        states.append(state)
 
         action = np.random.choice(env.get_legal_actions(state))
         state = env.get_next_state(state, action)
 
         num_turns += 1
 
+    last_state = state
     if verbose:
         env.print_board(state)
 
@@ -115,4 +117,5 @@ def random_play_game(env,
     default_v = [1, -1] * (num_turns // 2) + [1] * (num_turns % 2)
     default_v = np.array(default_v)
     v = winner * default_v
-    return states, v
+    states = np.array(states)
+    return states, v, last_state

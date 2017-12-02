@@ -6,6 +6,7 @@ class Node(object):
         else:
             self.outgoing_edges = []
         self.in_edge = in_edge
+        self.is_expanded = False
 
     def add_outgoing_edge(self, edge):
         self.outgoing_edges.append(edge)
