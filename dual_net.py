@@ -125,22 +125,31 @@ class DualNet(object):
         self.board_placeholder = tf.placeholder(tf.float32, [None] + list(env.input_shape))
         self.env = env
 
-        shared_layers = [{'layer': 'conv', 'num_outputs':
-                          num_convolutional_filters, 'stride': 3,
-                          'kernel_size': 1, 'activation_fn': tf.nn.relu}]
-        # add n_residual_layers to the shared layers
-        shared_layers += n_residual_layers*[{'layer': 'residual',
-                                             'num_outputs': num_convolutional_filters,
-                                             'stride': 1, 'kernel_size': 3,
-                                             'activation_fn': tf.nn.relu}]
+        # shared_layers = [{'layer': 'conv', 'num_outputs':
+        #                   num_convolutional_filters, 'stride': 3,
+        #                   'kernel_size': 1, 'activation_fn': tf.nn.relu}]
+        # # add n_residual_layers to the shared layers
+        # shared_layers += n_residual_layers*[{'layer': 'residual',
+        #                                      'num_outputs': num_convolutional_filters,
+        #                                      'stride': 1, 'kernel_size': 3,
+        #                                      'activation_fn': tf.nn.relu}]
 
-        policy_layers = [{'layer': 'conv', 'num_outputs': 2, 'stride': 1,
-                          'kernel_size': 1, 'activation_fn': tf.nn.relu},
+        # policy_layers = [{'layer': 'conv', 'num_outputs': 2, 'stride': 1,
+        #                   'kernel_size': 1, 'activation_fn': tf.nn.relu},
+        #                  {'layer': 'fc', 'num_outputs': self.action_size,
+        #                   'activation_fn': None}]
+        # value_layers = [{'layer': 'conv', 'num_outputs': 1, 'stride': 1,
+        #                  'kernel_size': 1, 'activation_fn': tf.nn.relu},
+        #                 {'layer': 'fc', 'num_outputs': num_convolutional_filters,
+        #                  'activation_fn': tf.nn.relu},
+        #                 {'layer': 'fc', 'num_outputs': 1,
+        #                  'activation_fn': tf.nn.tanh}]
+        shared_layers = []
+        policy_layers = [{'layer': 'fc', 'num_outputs': 30,
+                         'activation_fn': tf.nn.relu},
                          {'layer': 'fc', 'num_outputs': self.action_size,
                           'activation_fn': None}]
-        value_layers = [{'layer': 'conv', 'num_outputs': 1, 'stride': 1,
-                         'kernel_size': 1, 'activation_fn': tf.nn.relu},
-                        {'layer': 'fc', 'num_outputs': num_convolutional_filters,
+        value_layers = [{'layer': 'fc', 'num_outputs': 8,
                          'activation_fn': tf.nn.relu},
                         {'layer': 'fc', 'num_outputs': 1,
                          'activation_fn': tf.nn.tanh}]
@@ -162,11 +171,11 @@ class DualNet(object):
 
         # when the 0s become 0.000001s for illegal actions, we are counting on the fact that the are
         # nullified by the corresponding index of self.pi to be 0
-        self.policy_loss = tf.reduce_sum(tf.multiply(self.pi, tf.log(self.policy_predict + 0.0001)))
+        self.policy_loss = -tf.reduce_sum(tf.multiply(self.pi, tf.log(self.policy_predict + 0.0001)))
 
         self.regularization_loss = layers.apply_regularization(layers.l2_regularizer(regularization_mult),
                                                                weights_list=tf.trainable_variables())
-        self.loss = self.value_loss - self.policy_loss + tf.reduce_sum(self.regularization_loss)
+        self.loss = self.value_loss + self.policy_loss + tf.reduce_sum(self.regularization_loss)
         self.update_op = tf.train.AdamOptimizer(learning_rate).minimize(self.loss)
         self.sess = sess
 
@@ -207,9 +216,9 @@ class DualNet(object):
               move_legality_mask[i] = self.env.get_legality_mask(states[i])
         else:
           move_legality_mask = token_legality_mask
-        _, loss = self.sess.run([self.update_op, self.loss], feed_dict={self.board_placeholder: states,
+        _, loss, value_loss, policy_loss = self.sess.run([self.update_op, self.loss, self.value_loss, self.policy_loss], feed_dict={self.board_placeholder: states,
                                                    self.pi: pi,
                                                    self.z: z,
                                                    self.move_legality_mask: move_legality_mask})
 
-        return loss
+        return loss, value_loss, policy_loss

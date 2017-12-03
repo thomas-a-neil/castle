@@ -173,7 +173,8 @@ def play_smart_vs_random_game(model,
         
         if num_turns % 2 == smart_first_turn:
             policy, value = model(state)
-            action = np.random.choice(env.action_size, p=policy)
+            # action = np.random.choice(env.action_size, p=policy)
+            action = np.argmax(policy)
         else:
             action = np.random.choice(env.get_legal_actions(state))
         state = env.get_next_state(state, action)
