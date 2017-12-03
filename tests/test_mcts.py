@@ -1,8 +1,7 @@
 from functools import partial
 import unittest
-import numpy as np
 
-from mcts import backup, select, expand_node, exploration_bonus_for_c_puct, perform_rollouts, get_action_distribution
+from mcts import backup, select, expand_node, exploration_bonus_for_c_puct, perform_rollouts, get_action_distribution, get_next_state_with_mcts
 from tree import Node
 
 from utils import setup_simple_tree, mock_model, mock_env, numline_env, mock_model_numline
@@ -64,14 +63,13 @@ class TestMCTS(unittest.TestCase):
         self.assertEqual(selected_edge.num_visits, 100)
 
     def test_expand_node(self):
-        self.nodes[6].state = np.array([6])
+        self.nodes[6].state = 6
         self.assertEqual(len(self.nodes[6].outgoing_edges), 0)
         value = expand_node(self.nodes[6], mock_model, mock_env)
         self.assertEqual(value, 1)
         self.assertEqual(len(self.nodes[6].outgoing_edges), 2)
-        next_states = np.array([edge.out_node.state for edge in self.nodes[6].outgoing_edges])
-        # should probably be assertitemsequals
-        self.assertTrue(np.array_equal(next_states, np.array([[13], [14]])) or np.array_equal(next_states, np.array([[14], [13]])))
+        next_states = [edge.out_node.state for edge in self.nodes[6].outgoing_edges]
+        self.assertTrue(set(next_states), set([13, 14]))
 
 
 class TestRollouts(unittest.TestCase):
@@ -113,8 +111,50 @@ class TestRollouts(unittest.TestCase):
 
     def test_get_action_distribution(self):
         start_state = 0
+        root_node = Node(start_state)
         temperature = 1
         n_leaf_expansions = 2
         c = 100  # to make sure we explore a new path every time
-        distribution = get_action_distribution(start_state, temperature, n_leaf_expansions, mock_model, mock_env, c)
+        distribution = get_action_distribution(root_node, temperature, n_leaf_expansions, mock_model, mock_env, c)
         self.assertEquals(tuple(distribution), (0.5, 0.5))
+
+    def test_rollouts_on_same_tree(self):
+        root_node = Node(0)
+        n_leaf_expansions = 1
+        c = 100  # to make sure we explore a new path every time
+        exploration_bonus = partial(exploration_bonus_for_c_puct, c_puct=c)
+        perform_rollouts(root_node, n_leaf_expansions, mock_model_numline, numline_env, exploration_bonus)
+        self.assertEquals(len(root_node.outgoing_edges), 2)
+
+        # we should only be expanding the root state once.
+        perform_rollouts(root_node, n_leaf_expansions, mock_model_numline, numline_env, exploration_bonus)
+        self.assertEquals(len(root_node.outgoing_edges), 2)
+
+    def test_nodes_reuse_tree(self):
+        '''
+        This is a randomized test.  We perform_rollouts for the initial state with 30 leaf expansions
+        We test to see that the node returned from get_next_state_with_mcts holds data from those rollouts 
+        at its current node (now the second node) in addition to one potential next state.  
+
+        We should fully expand a states that have short depth.
+        '''
+        n_leaf_expansions = 30
+        c = 100
+        root_node = Node(0)
+        temperature = 1
+        exploration_bonus = partial(exploration_bonus_for_c_puct, c_puct=c)
+        perform_rollouts(root_node, n_leaf_expansions, mock_model_numline, numline_env, exploration_bonus)
+        
+        second_node, action = get_next_state_with_mcts(root_node, temperature, n_leaf_expansions, 
+            mock_model_numline, numline_env, c)
+
+        self.assertEqual(len(second_node.outgoing_edges), 2)
+
+        potential_third_node = second_node.outgoing_edges[0].out_node
+
+        self.assertEqual(len(potential_third_node.outgoing_edges), 2)
+
+
+
+
+
