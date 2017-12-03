@@ -12,7 +12,10 @@ class TicTacToeEnv(object):
         self.action_dims = (2, 3, 3)
         self.action_size = int(np.prod(self.action_dims))
         self.input_shape = (2, 3, 3)
-        self.start_state = np.zeros(self.input_shape)
+        self.start_state = self.get_start_state()
+
+    def get_start_state(self):
+        return np.zeros(self.input_shape)
 
     def get_next_state(self, state, action_int):
         action_array = self.convert_int_to_action(action_int)

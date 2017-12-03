@@ -72,7 +72,6 @@ def self_play_game(model,
 
 
 def random_play_game(env,
-                     start_state,
                      max_num_turns=40,
                      verbose=False):
     """
@@ -84,8 +83,6 @@ def random_play_game(env,
 
     Parameters
     ----------
-    start_state:
-        an initial game state (as defined by the environment)
     env:
         game playing environment that can progress game state and give us legal moves
     max_num_turns: int
@@ -93,7 +90,7 @@ def random_play_game(env,
     verbose: boolean
         If set to True, print the board state after each move
     """
-    state = start_state
+    state = env.get_start_state()
     # vector of states
     states = []
 
@@ -117,3 +114,36 @@ def random_play_game(env,
     v = winner * default_v
     states = np.array(states)
     return states, v
+
+
+def play_against_random(env,
+                        model,
+                        num_games=10):
+    """
+    Plays a model against a random agent.
+
+    Parameters
+    ----------
+    env: Game environment
+    model: Trained agent
+    num_games: Number of games to play
+
+    Returns (games won, games lost, games drawn)
+    """
+    games_won = 0
+    games_lost = 0
+    games_drawn = 0
+    for _ in range(num_games):
+        state = env.get_start_state()
+        while not env.is_game_over(state):
+            action = np.random.choice(env.get_legal_actions(state))
+            state = env.get_next_state(state, action)
+        outcome = env.outcome(state)
+        if outcome == 1:
+            games_won += 1
+        elif outcome == -1:
+            games_lost += 1
+        else:
+            games_drawn += 1
+
+    return games_won, games_lost, games_drawn
