@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 from dual_net import DualNet
-from game import self_play_game, random_play_game, play_smart_vs_random_game, play_smart1_vs_smart2_game
+from game import self_play_game, random_play_game, play_smart_vs_random_game, play_smart1_vs_smart2_game, play_many_vs_random_games
 from kqk_chess_env import KQKChessEnv, KQK_CHESS_INPUT_SHAPE
 from tictactoe_env import TicTacToeEnv
 
@@ -77,7 +77,7 @@ class TestTicTacToeGame(unittest.TestCase):
                                        temperature,
                                        max_num_turns=9)
         self.network.train(states, pi, v)
-        states, v = play_smart1_vs_smart2_game(untrained_model,
+        states, v, outcome = play_smart1_vs_smart2_game(untrained_model,
                                        self.network,
                                        self.env,
                                        self.start_state,
@@ -85,7 +85,6 @@ class TestTicTacToeGame(unittest.TestCase):
                                        c_puct,
                                        temperature,
                                        max_num_turns=9)
-        self.assertEqual(0, 1)
 
     def test_smart_vs_random(self):
         n_leaf_expansions = 10
@@ -99,13 +98,30 @@ class TestTicTacToeGame(unittest.TestCase):
                                        temperature,
                                        max_num_turns=9)
         self.network.train(states, pi, v)
-        states, v = play_smart_vs_random_game(self.network,
+        states, v, outcome = play_smart_vs_random_game(self.network,
                                        self.env,
                                        self.start_state,
                                        n_leaf_expansions,
                                        c_puct,
                                        temperature,
                                        max_num_turns=9)
+
+    def test_many_smart_vs_random(self):
+        n_leaf_expansions = 10
+        c_puct = 1000
+        temperature = 1
+        num_games = 100
+        outcomes = play_many_vs_random_games(num_games, 
+                                       self.network,
+                                       self.env,
+                                       self.start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=9)
+
+        # the number of wins for x should be higher than the number of wins for o since x plays first
+        self.assertGreater(outcomes[0], outcomes[2])
 
 class TestKQKChessGame(unittest.TestCase):
     def setUp(self):

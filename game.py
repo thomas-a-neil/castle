@@ -70,6 +70,43 @@ def self_play_game(model,
     action_distributions = np.array(action_distributions)
     return states, v, action_distributions
 
+def play_many_vs_random_games(num_games,
+                   model,
+                   env, 
+                   start_state,
+                   n_leaf_expansions,
+                   smart_first=True,
+                   c_puct=1.0,
+                   temperature=1,
+                   max_num_turns=40,
+                   verbose=False):
+    num_wins = 0
+    num_draws = 0
+    num_losses = 0
+    for i in range(num_games):
+        states, v, outcome = play_smart_vs_random_game(model,
+                   env,
+                   start_state,
+                   n_leaf_expansions,
+                   smart_first=True,
+                   c_puct=1.0,
+                   temperature=1,
+                   max_num_turns=40,
+                   verbose=False)
+        if outcome == 1:
+            if smart_first:
+                num_wins += 1
+            else:
+                num_losses += 1
+        elif outcome == 0:
+            num_draws += 1
+        elif outcome == -1:
+            if smart_first:
+                num_losses += 1
+            else:
+                num_wins += 1
+    return num_wins, num_draws, num_losses
+
 def play_smart_vs_random_game(model,
                    env,
                    start_state,
@@ -110,7 +147,7 @@ def play_smart_vs_random_game(model,
     default_v = np.array(default_v)
     v = winner * default_v
     states = np.array(states)
-    return states, v
+    return states, v, winner
 
 def play_smart1_vs_smart2_game(model1,
                    model2,
@@ -152,7 +189,7 @@ def play_smart1_vs_smart2_game(model1,
     default_v = np.array(default_v)
     v = winner * default_v
     states = np.array(states)
-    return states, v
+    return states, v, winner
 
 def random_play_game(env,
                      start_state,
