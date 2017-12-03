@@ -88,7 +88,18 @@ def play_many_vs_random_games(num_games,
     num_draws = 0
     num_losses = 0
     for i in range(num_games):
-        states, v, outcome = play_smart_vs_random_game(model,
+        if i < 10:
+            states, v, outcome = play_smart_vs_random_game(model,
+                   env,
+                   n_leaf_expansions,
+                   start_state=start_state,
+                   smart_first=True,
+                   c_puct=1.0,
+                   temperature=1,
+                   max_num_turns=40,
+                   verbose=verbose)
+        else:
+            states, v, outcome = play_smart_vs_random_game(model,
                    env,
                    n_leaf_expansions,
                    start_state=start_state,
@@ -173,8 +184,10 @@ def play_smart_vs_random_game(model,
         
         if num_turns % 2 == smart_first_turn:
             policy, value = model(state)
-            # action = np.random.choice(env.action_size, p=policy)
-            action = np.argmax(policy)
+            action = np.random.choice(env.action_size, p=policy)
+            # action = np.argmax(policy)
+            if verbose :
+                print('policy', policy)
         else:
             action = np.random.choice(env.get_legal_actions(state))
         state = env.get_next_state(state, action)

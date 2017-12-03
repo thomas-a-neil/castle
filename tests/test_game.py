@@ -51,8 +51,12 @@ class TestTicTacToeGame(unittest.TestCase):
                                        n_leaf_expansions,
                                        c_puct=c_puct,
                                        temperature=temperature,
-                                       max_num_turns=9)
+                                       max_num_turns=9,
+                                       verbose=True)
         self.network.train(states, pi, v)
+        print('states', states, len(states))
+        self.assertLessEqual(len(states), 9)
+        self.assertGreaterEqual(len(states), 5)
         states, v, pi = self_play_game(self.network,
                                        self.env,
                                        n_leaf_expansions,
@@ -94,6 +98,8 @@ class TestTicTacToeGame(unittest.TestCase):
                                        c_puct=c_puct,
                                        temperature=temperature,
                                        max_num_turns=9)
+        self.assertLessEqual(len(states), 9)
+        self.assertGreaterEqual(len(states), 5)
         self.network.train(states, pi, v)
         states, v, outcome = play_smart_vs_random_game(self.network,
                                        self.env,

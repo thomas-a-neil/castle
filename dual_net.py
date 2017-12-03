@@ -191,6 +191,7 @@ class DualNet(object):
           inp = np.expand_dims(inp, axis=0)
           expanded = True
         move_legality_mask = np.zeros(shape=(inp.shape[0], self.action_size))
+
         for i in range(inp.shape[0]):
             move_legality_mask[i] = self.env.get_legality_mask(inp[i])
         policy, value = self.sess.run([self.policy_predict, self.value_predict],
