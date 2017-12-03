@@ -177,6 +177,7 @@ class DualNet(object):
                                                                weights_list=tf.trainable_variables())
         self.loss = self.value_loss + self.policy_loss + tf.reduce_sum(self.regularization_loss)
         self.update_op = tf.train.AdamOptimizer(learning_rate).minimize(self.loss)
+        self.value_update_op = tf.train.AdamOptimizer(learning_rate).minimize(self.value_loss)
         self.sess = sess
 
     def __call__(self, inp):
@@ -216,9 +217,60 @@ class DualNet(object):
               move_legality_mask[i] = self.env.get_legality_mask(states[i])
         else:
           move_legality_mask = token_legality_mask
-        _, loss, value_loss, policy_loss = self.sess.run([self.update_op, self.loss, self.value_loss, self.policy_loss], feed_dict={self.board_placeholder: states,
+        _, loss, value_loss, policy_loss, value_predict, policy_predict = self.sess.run([self.update_op, self.loss, 
+                  self.value_loss, self.policy_loss, self.value_predict, self.policy_predict], 
+                  feed_dict={self.board_placeholder: states,
                                                    self.pi: pi,
                                                    self.z: z,
                                                    self.move_legality_mask: move_legality_mask})
 
-        return loss, value_loss, policy_loss
+        return loss, value_loss, policy_loss, value_predict, policy_predict
+
+    def train_value(self, states, z, token_legality_mask=None):
+      if token_legality_mask is None:
+        move_legality_mask = np.zeros(shape=(len(states), self.action_size))
+        for i in range(len(states)):
+            move_legality_mask[i] = self.env.get_legality_mask(states[i])
+      else:
+        move_legality_mask = token_legality_mask
+      _, value_loss, value_predict = self.sess.run([self.value_update_op,
+         self.value_loss, self.value_predict], feed_dict={self.board_placeholder: states,
+                                                 self.z: z,
+                                                 self.move_legality_mask: move_legality_mask})
+
+      return value_loss, value_predict
+
+    def test_value(self, states, z, token_legality_mask=None):
+      if token_legality_mask is None:
+        move_legality_mask = np.zeros(shape=(len(states), self.action_size))
+        for i in range(len(states)):
+            move_legality_mask[i] = self.env.get_legality_mask(states[i])
+      else:
+        move_legality_mask = token_legality_mask
+      value_loss = self.sess.run([self.value_loss], 
+                                                 feed_dict={self.board_placeholder: states,
+                                                 self.z: z,
+                                                 self.move_legality_mask: move_legality_mask})
+
+      return value_loss
+
+    def classify_value(self, states, z):
+      '''
+      This is pseudo-classification
+      We simply
+      '''
+      move_legality_mask = np.zeros(shape=(len(states), self.action_size))
+      for i in range(len(states)):
+        move_legality_mask[i] = self.env.get_legality_mask(states[i])
+      value_loss, value_predict = self.sess.run([self.value_loss, self.value_predict], 
+                                                 feed_dict={self.board_placeholder: states,
+                                                 self.z: z,
+                                                 self.move_legality_mask: move_legality_mask})
+      value_guesses = np.around(value_predict)
+      total_correct = 0
+      total = value_guesses.size
+      for i in range(total):
+        if z[i] == value_guesses[i]:
+          total_correct += 1
+      accuracy = total_correct / float(total)
+      return value_guesses, accuracy
