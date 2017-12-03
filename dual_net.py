@@ -175,12 +175,20 @@ class DualNet(object):
         Gets a feed-forward prediction for a batch of input boards of shape set
         during initialization.
         """
+        expanded = False
+        if inp.ndim == len(self.env.input_shape):
+          # our input is not a batch.  it is a single state
+          inp = np.expand_dims(inp, axis=0)
+          expanded = True
         move_legality_mask = np.zeros(shape=(inp.shape[0], self.action_size))
         for i in range(inp.shape[0]):
             move_legality_mask[i] = self.env.get_legality_mask(inp[i])
         policy, value = self.sess.run([self.policy_predict, self.value_predict],
                                       feed_dict={self.board_placeholder: inp,
                                                  self.move_legality_mask: move_legality_mask})
+        if expanded:
+          policy = policy[0]
+          value = value[0]
         return policy, value
 
     def train(self, states, pi, z, token_legality_mask=None):

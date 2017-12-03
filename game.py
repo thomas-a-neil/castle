@@ -70,6 +70,89 @@ def self_play_game(model,
     action_distributions = np.array(action_distributions)
     return states, v, action_distributions
 
+def play_smart_vs_random_game(model,
+                   env,
+                   start_state,
+                   n_leaf_expansions,
+                   smart_first=True,
+                   c_puct=1.0,
+                   temperature=1,
+                   max_num_turns=40,
+                   verbose=False):
+    '''
+    Only used for testing purposes
+    No MCTS search --> just feedforward action distribution from network
+    Returns states, values
+    '''
+    state = start_state
+    # vector of states
+    states = []
+
+    smart_first_turn = 0 if smart_first else 1
+    num_turns = 0
+    while not env.is_game_over(state) and num_turns <= max_num_turns:
+        states.append(state)
+        if verbose:
+            env.print_board(state)
+        
+        if num_turns % 2 == smart_first_turn:
+            policy, value = model(state)
+            action = np.random.choice(env.action_size, p=policy)
+        else:
+            action = np.random.choice(env.get_legal_actions(state))
+        state = env.get_next_state(state, action)
+        num_turns += 1
+    if verbose:
+        env.print_board(state)
+
+    winner = env.outcome(state) if num_turns <= max_num_turns else 0
+    default_v = [1, -1] * (num_turns // 2) + [1] * (num_turns % 2)
+    default_v = np.array(default_v)
+    v = winner * default_v
+    states = np.array(states)
+    return states, v
+
+def play_smart1_vs_smart2_game(model1,
+                   model2,
+                   env,
+                   start_state,
+                   n_leaf_expansions,
+                   c_puct=1.0,
+                   temperature=1,
+                   max_num_turns=40,
+                   verbose=False):
+    '''
+    Only used for testing purposes
+    No MCTS search --> just feedforward action distribution from network
+    Returns states, values
+    '''
+    state = start_state
+    # vector of states
+    states = []
+
+    num_turns = 0
+    while not env.is_game_over(state) and num_turns <= max_num_turns:
+        states.append(state)
+        if verbose:
+            env.print_board(state)
+        
+        if num_turns % 2 == 0:
+            policy, value = model1(state)
+            action = np.random.choice(env.action_size, p=policy)
+        else:
+            policy, value = model2(state)
+            action = np.random.choice(env.action_size, p=policy)
+        state = env.get_next_state(state, action)
+        num_turns += 1
+    if verbose:
+        env.print_board(state)
+
+    winner = env.outcome(state) if num_turns <= max_num_turns else 0
+    default_v = [1, -1] * (num_turns // 2) + [1] * (num_turns % 2)
+    default_v = np.array(default_v)
+    v = winner * default_v
+    states = np.array(states)
+    return states, v
 
 def random_play_game(env,
                      start_state,

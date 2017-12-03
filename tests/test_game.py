@@ -4,12 +4,12 @@ import numpy as np
 import tensorflow as tf
 
 from dual_net import DualNet
-from game import self_play_game, random_play_game
+from game import self_play_game, random_play_game, play_smart_vs_random_game, play_smart1_vs_smart2_game
 from kqk_chess_env import KQKChessEnv, KQK_CHESS_INPUT_SHAPE
 from tictactoe_env import TicTacToeEnv
 
 from utils import numline_env, mock_model_numline
-
+import copy
 
 class TestNumlineGame(unittest.TestCase):
     def test_numline_game(self):
@@ -32,6 +32,11 @@ class TestNumlineGame(unittest.TestCase):
 class TestTicTacToeGame(unittest.TestCase):
     def setUp(self):
         self.env = TicTacToeEnv()
+        sess = tf.Session()
+        self.network = DualNet(sess, self.env, input_shape=self.env.input_shape, action_size=self.env.action_size)
+        sess.__enter__()
+        tf.global_variables_initializer().run()
+        self.start_state = self.env.start_state
 
     def test_ttt_game(self):
         start_state = np.zeros((2, 3, 3), dtype=int)
@@ -40,11 +45,6 @@ class TestTicTacToeGame(unittest.TestCase):
         self.assertGreaterEqual(len(states), 5)
 
     def test_ttt_self_play_and_train(self):
-        self.start_state = self.env.start_state
-        sess = tf.Session()
-        self.network = DualNet(sess, self.env, input_shape=self.env.input_shape, action_size=self.env.action_size)
-        sess.__enter__()
-        tf.global_variables_initializer().run()
         n_leaf_expansions = 10
         c_puct = 1000
         temperature = 1
@@ -57,6 +57,49 @@ class TestTicTacToeGame(unittest.TestCase):
                                        max_num_turns=9)
         self.network.train(states, pi, v)
         states, v, pi = self_play_game(self.network,
+                                       self.env,
+                                       self.start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=9)
+
+    def test_smart1_vs_smart2(self):
+        n_leaf_expansions = 10
+        c_puct = 1000
+        temperature = 1
+        untrained_model = copy.copy(self.network)
+        states, v, pi = self_play_game(self.network,
+                                       self.env,
+                                       self.start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=9)
+        self.network.train(states, pi, v)
+        states, v = play_smart1_vs_smart2_game(untrained_model,
+                                       self.network,
+                                       self.env,
+                                       self.start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=9)
+        self.assertEqual(0, 1)
+
+    def test_smart_vs_random(self):
+        n_leaf_expansions = 10
+        c_puct = 1000
+        temperature = 1
+        states, v, pi = self_play_game(self.network,
+                                       self.env,
+                                       self.start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=9)
+        self.network.train(states, pi, v)
+        states, v = play_smart_vs_random_game(self.network,
                                        self.env,
                                        self.start_state,
                                        n_leaf_expansions,
