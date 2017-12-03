@@ -37,6 +37,11 @@ class ChessEnv(object):
         self.action_size = action_size
         self.input_shape = input_shape
 
+    def get_start_state(self):
+        board = chess.Board()
+        state = self.map_board_to_state(board)
+        return state
+
     def get_next_state(self, state, action):
         board = self.map_state_to_board(state)
         move = self.map_action_to_move(state, action)
