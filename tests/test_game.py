@@ -39,6 +39,30 @@ class TestTicTacToeGame(unittest.TestCase):
         self.assertLessEqual(len(states), 9)
         self.assertGreaterEqual(len(states), 5)
 
+    def test_ttt_self_play_and_train(self):
+        self.start_state = self.env.start_state
+        sess = tf.Session()
+        self.network = DualNet(sess, self.env, input_shape=self.env.input_shape, action_size=self.env.action_size)
+        sess.__enter__()
+        tf.global_variables_initializer().run()
+        n_leaf_expansions = 10
+        c_puct = 1000
+        temperature = 1
+        states, v, pi = self_play_game(self.network,
+                                       self.env,
+                                       self.start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=9)
+        self.network.train(states, pi, v)
+        states, v, pi = self_play_game(self.network,
+                                       self.env,
+                                       self.start_state,
+                                       n_leaf_expansions,
+                                       c_puct,
+                                       temperature,
+                                       max_num_turns=9)
 
 class TestKQKChessGame(unittest.TestCase):
     def setUp(self):

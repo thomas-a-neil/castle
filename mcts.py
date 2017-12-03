@@ -55,7 +55,7 @@ def expand_node(node, model, env):
     value = values[0]
     legal_actions = env.get_legal_actions(node.state)
     for i, action in enumerate(legal_actions):
-        action_prob = action_probs[i]
+        action_prob = action_probs[int(action)]
         next_state = env.get_next_state(node.state, action)
         child_node = Node(next_state)
         create_new_connection(node, child_node, action, action_prob)
@@ -93,9 +93,16 @@ def perform_rollouts(root_node,
     while n_leaf_expansions > 0:
         # expand root
         edge = select(root_node, exploration_bonus)
-        while edge.num_visits != 0:
+        end_node_reached = False
+        while edge.num_visits != 0 and not end_node_reached:
             cur_node = edge.out_node
-            edge = select(cur_node, exploration_bonus)
+            if len(cur_node.outgoing_edges) > 0:
+                # To expand a node means to enumerate all possible actions from that node
+                # and put them in the tree.  If a node has no outgoing_edges after being expanded, 
+                # then it has no available actions.  We should not 'select' in that case
+                edge = select(cur_node, exploration_bonus)
+            else:
+                end_node_reached = True
         cur_node = edge.out_node
         # find a node you haven't expanded yet, expand it
         value = expand_node(cur_node, model, env)

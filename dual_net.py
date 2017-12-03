@@ -4,7 +4,7 @@ import tensorflow.contrib.layers as layers
 import numpy as np
 import chess
 
-from chess_env import FULL_CHESS_INPUT_SHAPE
+from chess_env import FULL_CHESS_INPUT_SHAPE, POSITION_POSITION_ACTION_SIZE
 
 
 # A convolutional block as described in AlphaGo Zero
@@ -107,8 +107,8 @@ class DualNet(object):
                  learning_rate=0.01,
                  regularization_mult=0.01,
                  n_residual_layers=2,
-                 #input_shape=FULL_CHESS_INPUT_SHAPE,
-                 #action_size=POSITION_POSITION_ACTION_SIZE,
+                 input_shape=FULL_CHESS_INPUT_SHAPE,
+                 action_size=POSITION_POSITION_ACTION_SIZE,
                  num_convolutional_filters=256
                  ):
         """
