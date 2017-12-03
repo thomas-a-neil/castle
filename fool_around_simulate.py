@@ -1,0 +1,159 @@
+import sys
+from chess_env import ChessEnv
+from tictactoe_env import TicTacToeEnv
+import numpy as np
+import tensorflow as tf
+from mcts import backup, select, expand_node, exploration_bonus_for_c_puct, perform_rollouts, get_action_distribution
+from tree import Node
+from functools import partial
+from dual_net import DualNet
+# from grandmaster import Game
+import pdb
+import pickle
+import matplotlib.pyplot as plt
+from game import self_play_game, random_play_game, play_smart_vs_random_game, play_smart1_vs_smart2_game, play_many_vs_random_games, play_many_smart1_vs_smart2
+
+def main(argv):
+	ttt()
+
+def ttt():
+	env = TicTacToeEnv()
+	sess = tf.Session()
+	network = DualNet(sess, env, learning_rate=0.0001, regularization_mult=0.0, n_residual_layers=0, input_shape=[2, 3, 3], action_size=9, num_convolutional_filters=8)
+	sess.__enter__()
+	tf.global_variables_initializer().run()
+	start_state = np.zeros((2, 3, 3))
+	n_leaf_expansions = 9
+	c_puct = 10
+	temperature = 1
+
+	
+
+	'''
+	Supervised value learning first
+	'''
+	# verbose = True
+	# num_epochs = 200
+	# last_states = np.load('last_states.npy')
+	# outcomes = np.load('outcomes.npy')
+	# num_test = 1000
+	# total = 10000
+	# indices = np.random.choice(total, total, replace=False)
+	# train_indices = indices[num_test:]
+	# test_indices = indices[:num_test]
+	# x_train = last_states[train_indices]
+	# x_test = last_states[test_indices]
+	# y_train = -outcomes[train_indices]
+	# y_test = -outcomes[test_indices]
+
+	# batch_size = 100
+	# num_train = total - num_test
+	# runs_per_epoch = num_train / batch_size
+
+	# value_losses = []
+	# test_losses = np.zeros(num_epochs)
+	# test_accuracies = np.zeros(num_epochs)
+
+	# for i in range(num_epochs):
+	# 	if verbose:
+	# 		print('Supervised epoch', i)
+	# 	for start_index in range(0, num_train, batch_size):
+	# 		batch_indices = np.arange(start_index, start_index + batch_size)
+	# 		x_batch = x_train[batch_indices]
+	# 		y_batch = y_train[batch_indices]
+	# 		value_loss, value_predict = network.train_value(x_batch, y_batch)
+	# 		if start_index == 0 and verbose:
+	# 			print('diff', value_predict[:20], y_batch[:20])
+	# 		value_losses.append(value_loss / batch_size)
+	# 	test_loss = network.test_value(x_test, y_test)[0] / num_test
+	# 	test_guess, test_accuracy = network.classify_value(x_test, y_test)
+	# 	test_accuracies[i] = test_accuracy
+	# 	if verbose:
+	# 		print('test_accuracy', test_accuracy)
+	# 		print('test_loss', test_loss)
+	# 	test_losses[i] = test_loss
+
+	'''
+	MCTS learning with self play second
+	'''
+
+	num_training_games = 100000
+
+	num_games_v_random = 10000
+
+	init_results = play_many_vs_random_games(num_games_v_random, network, env,
+		n_leaf_expansions, c_puct=c_puct, temperature=temperature, max_num_turns=10, verbose=True)
+	print('init_results', init_results)
+
+	test_vs_random_results = [init_results]
+
+	batch_size = 100
+	num_batches = int(num_training_games / batch_size)
+	losses = np.zeros(num_batches)
+	value_losses = np.zeros(num_batches)
+	policy_losses = np.zeros(num_batches)
+	for i in range(num_batches):
+		batch_states = []
+		batch_z = []
+		batch_pi = []
+		for j in range(batch_size):
+			states, z, pi = self_play_game(network, env, n_leaf_expansions, 
+				c_puct=c_puct, temperature=temperature, max_num_turns=10, verbose=False)
+			batch_states.extend(states)
+			batch_z.extend(z)
+			batch_pi.extend(pi)
+		batch_states = np.array(batch_states)
+		batch_z = np.array(batch_z)
+		batch_pi = np.array(batch_pi)
+
+		# loss, value_loss, policy_loss = network.train(states, pi, z)
+		loss, value_loss, policy_loss, value_predict, policy_predict = network.train(batch_states, batch_pi, batch_z)
+		losses[i] = loss 
+		value_losses[i] = value_loss
+		policy_losses[i] = policy_loss
+		# regularization_losses[i] = regularization_loss
+		
+		print('batch number', i)
+		print('policy_loss', policy_loss)
+		print('value_loss', value_loss)
+		print('loss', loss)
+		print('value_predict', value_predict[:10], z[:10])
+
+		if i % 10 == 0 and i > 0:
+			curr_results = play_many_vs_random_games(num_games_v_random, network, env,
+				n_leaf_expansions, c_puct=c_puct, temperature=temperature, max_num_turns=10, verbose=True)
+			test_vs_random_results.append(curr_results)
+			print('curr_results', curr_results)
+
+		# print('policy_predict', policy_predict)
+	final_results = play_many_vs_random_games(num_games_v_random, network, env,
+		n_leaf_expansions, c_puct=c_puct, temperature=temperature, max_num_turns=10, verbose=False)
+	# print('final_results', final_results)
+	print('test_vs_random_results', test_vs_random_results)
+	test_vs_random_results.append(final_results)
+
+	plt.scatter(np.arange(len(test_vs_random_results)), np.array([x[0] for x in test_vs_random_results]) / 100.0)
+	plt.title('win rate')
+	plt.show()
+
+	plt.scatter(np.arange(len(test_vs_random_results)), np.array([x[1] for x in test_vs_random_results]) / 100.0)
+	plt.title('tie rate')
+	plt.show()
+
+	plt.scatter(np.arange(len(test_vs_random_results)), np.array([x[2] for x in test_vs_random_results]) / 100.0)
+	plt.title('loss rate')
+	plt.show()
+
+	plt.plot(losses)
+	plt.title('total loss')
+	plt.show()
+	plt.plot(value_losses)
+	plt.title('value_losses')
+	plt.show()
+	plt.plot(policy_losses)
+	plt.title('policy_losses')
+	plt.show()
+
+
+if __name__ == '__main__':
+	main(sys.argv[1:])
