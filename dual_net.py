@@ -287,6 +287,3 @@ class DualNet(object):
           total_correct += 1
       accuracy = total_correct / float(total)
       return value_guesses, accuracy
-
-    def save_weights(self):
-      

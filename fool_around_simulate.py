@@ -29,10 +29,8 @@ def gather_data():
 		if i % 10000 == 0:
 			print(i)
 		states, outcomes, end_state = random_play_game(env)
-		# transformed_states
-		# last_states.extend(states)
-		# last_outcomes.extend(outcomes)
-		for i in range(len(states)):
+		last_states.extend(states)
+		last_outcomes.extend(outcomes)
 			
 		# last_states[2*i,:,:,:] = states[-1]
 		# last_states[2*i+1,:,:,:] = states[-2]
