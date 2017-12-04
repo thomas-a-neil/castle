@@ -9,7 +9,7 @@ def self_play_game(model,
                    n_leaf_expansions,
                    start_state='Default',
                    c_puct=1.0,
-                   temperature=1,
+                   temperature=[1,0.5],
                    max_num_turns=40,
                    verbose=False):
     """
@@ -57,7 +57,12 @@ def self_play_game(model,
             env.print_board(cur_node.state)
 
         # we pass nodes in to keep work done in previous mcts rollouts.
-        cur_node, distribution = get_next_state_with_mcts(cur_node, temperature, n_leaf_expansions, model, env, c_puct)
+        if num_turns < 4:
+            temperature_index = 0
+        else:
+            temperature_index = 1
+        cur_node, distribution = get_next_state_with_mcts(cur_node, temperature[temperature_index],
+             n_leaf_expansions, model, env, c_puct)
         action_distributions.append(distribution)
 
         num_turns += 1
@@ -184,8 +189,8 @@ def play_smart_vs_random_game(model,
         
         if num_turns % 2 == smart_first_turn:
             policy, value = model(state)
-            action = np.random.choice(env.action_size, p=policy)
-            # action = np.argmax(policy)
+            # action = np.random.choice(env.action_size, p=policy)
+            action = np.argmax(policy)
             if verbose :
                 print('policy', policy)
         else:

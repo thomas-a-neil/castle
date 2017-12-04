@@ -16,6 +16,8 @@ from game import self_play_game, random_play_game, play_smart_vs_random_game, pl
 def main(argv):
 	# gather_data()
 	ttt()
+	# test_save()
+	test_load()
 	
 
 def gather_data():
@@ -29,38 +31,67 @@ def gather_data():
 		if i % 10000 == 0:
 			print(i)
 		states, outcomes, end_state = random_play_game(env)
-		last_states.extend(states)
-		last_outcomes.extend(outcomes)
+		# last_states.extend(states)
+		# last_outcomes.extend(outcomes)
+
+		# transformed stuff
+
+		for i in range(len(states)):
+			transformations, chosen_transform = env.sample_invariant_transformation(states[i])
+			for j in range(len(transformations)):
+				last_states.append(transformations[j])
+				last_outcomes.append(outcomes[i])
+
 			
 		# last_states[2*i,:,:,:] = states[-1]
 		# last_states[2*i+1,:,:,:] = states[-2]
 		# last_outcomes[2*i] = outcomes[-1]
 		# last_outcomes[2*i+1] = -outcomes[-1]
-	np.save('last_states_fixed.npy', last_states)
-	np.save('outcomes_fixed.npy', last_outcomes)
+	np.save('last_states_fixed_transformed.npy', last_states)
+	np.save('outcomes_fixed_transformed.npy', last_outcomes)
 
-def ttt():
+def test_save():
 	env = TicTacToeEnv()
 	sess = tf.Session()
 	network = DualNet(sess, env, learning_rate=0.0001, regularization_mult=0.0, n_residual_layers=0, input_shape=[2, 3, 3], action_size=9, num_convolutional_filters=8)
 	sess.__enter__()
 	tf.global_variables_initializer().run()
 	start_state = np.zeros((2, 3, 3))
-	n_leaf_expansions = 10
-	c_puct = 10
-	temperature = 1
+	n_leaf_expansions = 15
+	c_puct = 1
+	temperature = [0.4, 0.2]
 
 	
+
+def test_load():
+	env = TicTacToeEnv()
+	sess = tf.Session()
+	sess.__enter__()
+	load_graph(sess, 0)
+
+
+def ttt():
+	env = TicTacToeEnv()
+	sess = tf.Session()
+	network = DualNet(sess, env, learning_rate=0.001, regularization_mult=0.0, n_residual_layers=0, input_shape=[2, 3, 3], action_size=9, num_convolutional_filters=8)
+	sess.__enter__()
+	tf.global_variables_initializer().run()
+	saver = tf.train.Saver()
+	start_state = np.zeros((2, 3, 3))
+	n_leaf_expansions = 30
+	c_puct = 1
+	temperature = [0.8, 0.2]
+
 
 	'''
 	Supervised value learning first
 	'''
 	verbose = True
-	num_epochs = 500
+	num_epochs = 400
 	# last_states = np.load('last_states.npy')
 	# outcomes = np.load('outcomes.npy')
-	last_states = np.load('last_states_fixed.npy')
-	outcomes = np.load('outcomes_fixed.npy')
+	last_states = np.load('last_states_fixed_transformed.npy')
+	outcomes = np.load('outcomes_fixed_transformed.npy')
 	print('outcomes', outcomes.shape)
 	print('last_states', last_states.shape)
 	num_test = 1000
@@ -106,7 +137,7 @@ def ttt():
 
 	num_training_games = 100000
 
-	num_games_v_random = 10000
+	num_games_v_random = 1000
 
 	init_results = play_many_vs_random_games(num_games_v_random, network, env,
 		n_leaf_expansions, c_puct=c_puct, temperature=temperature, max_num_turns=10, verbose=True)
@@ -135,16 +166,29 @@ def ttt():
 
 		# loss, value_loss, policy_loss = network.train(states, pi, z)
 		loss, value_loss, policy_loss, value_predict, policy_predict = network.train(batch_states, batch_pi, batch_z)
+		# network.save_graph(saver, sess, 0)
+		# with open('filename.pickle', 'wb') as handle:
+		# 	pickle.dump(network, handle)
+		# return
 		losses[i] = loss 
 		value_losses[i] = value_loss
 		policy_losses[i] = policy_loss
 		# regularization_losses[i] = regularization_loss
 		
+		num_to_print = 10
 		print('batch number', i)
 		print('policy_loss', policy_loss)
 		print('value_loss', value_loss)
 		print('loss', loss)
-		print('value_predict', value_predict[:10], z[:10])
+		for j in range(num_to_print):
+			env.print_board(batch_states[j])
+			print('value_predict', value_predict[j])
+			print('policy_predict', policy_predict[j])
+			print('pi', batch_pi[j])
+			# print('value_predict', value_predict[:num_to_print], batch_z[:num_to_print])
+			# env.print_board()
+			# print('policy_predict', policy_predict[:num_to_print])
+			# print('pi', batch_pi[:num_to_print])
 
 		if i % 20 == 0 and i > 0:
 			curr_results = play_many_vs_random_games(num_games_v_random, network, env,
@@ -180,6 +224,12 @@ def ttt():
 	plt.plot(policy_losses)
 	plt.title('policy_losses')
 	plt.show()
+
+def load_graph(sess, index):
+	  #Now, save the graph
+	  # sess = tf.Session()
+	  new_saver = tf.train.import_meta_graph('my_test_model_{0}.meta'.format(index))
+	  new_saver.restore(sess, tf.train.latest_checkpoint('./'))
 
 
 if __name__ == '__main__':

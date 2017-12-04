@@ -6,6 +6,8 @@ import chess
 
 from chess_env import FULL_CHESS_INPUT_SHAPE, POSITION_POSITION_ACTION_SIZE
 
+import pickle
+
 
 # A convolutional block as described in AlphaGo Zero
 def conv_block(tensor, specs):
@@ -124,6 +126,7 @@ class DualNet(object):
         self.action_size = env.action_size
         self.board_placeholder = tf.placeholder(tf.float32, [None] + list(env.input_shape))
         self.env = env
+        
 
         # shared_layers = [{'layer': 'conv', 'num_outputs':
         #                   num_convolutional_filters, 'stride': 3,
@@ -146,10 +149,13 @@ class DualNet(object):
         #                  'activation_fn': tf.nn.tanh}]
 
         # Sunday experiment noon to 3pm
-        shared_layers = []
-        policy_layers = [{'layer': 'fc', 'num_outputs': 30,
+        shared_layers = [{'layer': 'fc', 'num_outputs': 60,
                          'activation_fn': tf.nn.relu},
-                         {'layer': 'fc', 'num_outputs': self.action_size,
+                         {'layer': 'fc', 'num_outputs': 40,
+                         'activation_fn': tf.nn.relu}]
+        policy_layers = [{'layer': 'fc', 'num_outputs': 15,
+                         'activation_fn': tf.nn.relu},
+                        {'layer': 'fc', 'num_outputs': self.action_size,
                           'activation_fn': None}]
         value_layers = [{'layer': 'fc', 'num_outputs': 8,
                          'activation_fn': tf.nn.relu},
@@ -191,6 +197,7 @@ class DualNet(object):
         self.update_op = tf.train.AdamOptimizer(learning_rate).minimize(self.loss)
         self.value_update_op = tf.train.AdamOptimizer(learning_rate).minimize(self.value_loss)
         self.sess = sess
+        
 
     def __call__(self, inp):
         """
@@ -287,3 +294,15 @@ class DualNet(object):
           total_correct += 1
       accuracy = total_correct / float(total)
       return value_guesses, accuracy
+    
+      
+
+
+
+
+
+
+
+
+
+

@@ -20,12 +20,26 @@ class TestTicTacToeEnv(unittest.TestCase):
             action_int = self.env.convert_action_to_int(action_array)
             state = self.env.get_next_state(state, action_int)
         self.env.print_board(state)
-        transformations = self.env.sample_invariant_transformation(state)
+        transformations, transformation, transform_index = self.env.sample_invariant_transformation(state)
         for j in range(len(transformations)):
             # transformation_state = self.env.sample_invariant_transformation(state)
             t = transformations[j]
             self.env.print_board(t)
         self.assertEqual(9, 8)
+
+    def test_revert_back(self):
+        moves = [(0, 2), (0, 1)]
+        state = self.start_state
+        for i in range(len(moves)):
+            action_array = np.zeros(self.env.action_dims, dtype=int)
+            action_array[moves[i][0], moves[i][1]] = 1
+            action_int = self.env.convert_action_to_int(action_array)
+            state = self.env.get_next_state(state, action_int)
+        true_final_state = np.zeros((2, 3, 3), dtype=int)
+        true_final_state[0, 0, 2] = 1
+        true_final_state[1, 0, 1] = 1
+
+        self.assertTrue(np.array_equal(true_final_state, state))
 
     def test_init(self):
         self.assertEqual(len(self.env.get_legal_actions(self.start_state)), 9)

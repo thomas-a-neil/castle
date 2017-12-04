@@ -4,6 +4,7 @@ import numpy as np
 
 from tree import Node, create_new_connection
 
+import pdb
 
 def exploration_bonus_for_c_puct(edge, c_puct):
     """
@@ -36,11 +37,14 @@ def backup(node, value):
     """
     cur_node = node
     # while not root, move the value up
+    count = 1
     while cur_node.in_edge is not None:
         edge = cur_node.in_edge
         edge.num_visits += 1
-        edge.total_action_value += value
+
+        edge.total_action_value += (-1)**count*value
         cur_node = edge.in_node
+        count += 1
 
 
 def expand_node(node, model, env):
@@ -49,10 +53,16 @@ def expand_node(node, model, env):
     to subsequent states. Returns the value of the current state as
     calculated by the model.
     """
-    invariant_state = env.sample_invariant_transformation(node.state)
-    vec_action_probs, values = model(np.array([invariant_state]))
+    invariant_state_list, invariant_state, transform_type = env.sample_invariant_transformation(node.state)
+    transform_vec_action_probs, values = model(np.array([invariant_state]))
     # need to take [0] index since we're only putting in one state
-    action_probs = vec_action_probs[0]
+    # need to transform back
+
+    vec_action_probs = env.revert_transform(np.reshape(transform_vec_action_probs, env.action_dims), transform_type)
+    vec_action_probs = np.reshape(vec_action_probs, (-1, 1))
+
+    # action_probs = vec_action_probs[0]
+    action_probs = vec_action_probs
     value = values[0]
     legal_actions = env.get_legal_actions(node.state)
     for i, action in enumerate(legal_actions):
@@ -87,6 +97,7 @@ def perform_rollouts(root_node,
         how good the edge is to explore with our exploration rate.
     """
     cur_node = root_node
+
     # add all edges and children for current node
     if not root_node.is_expanded:
         value = expand_node(root_node, model, env)
@@ -106,7 +117,11 @@ def perform_rollouts(root_node,
                 end_node_reached = True
         cur_node = edge.out_node
         # find a node you haven't expanded yet, expand it
-        value = expand_node(cur_node, model, env)
+        if not cur_node.is_expanded:
+            value = expand_node(cur_node, model, env)
+        else:
+            # entered here because we reached an end state
+            value = edge.mean_action_value
         backup(cur_node, value)
 
         n_leaf_expansions -= 1
@@ -168,8 +183,17 @@ def get_next_state_with_mcts(root_node,
     Returns a tuple of (next_node, action_distribution) used to choose the action taken at the
     root node.
     """
+    # distribution is of size action_size
     distribution = get_action_distribution(root_node, temperature, n_leaf_expansions, model, env, c_puct)
+
     action = np.random.choice(env.action_size, p=distribution)
+
+    # len(root_node.outgoing_edge) == # of legal moves
     edge = [edge for edge in root_node.outgoing_edges if edge.action == action]
     next_node = edge[0].out_node
     return next_node, distribution
+
+
+
+
+
