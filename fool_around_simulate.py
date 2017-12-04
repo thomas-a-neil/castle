@@ -86,50 +86,50 @@ def ttt():
 	'''
 	Supervised value learning first
 	'''
-	verbose = True
-	num_epochs = 400
-	# last_states = np.load('last_states.npy')
-	# outcomes = np.load('outcomes.npy')
-	last_states = np.load('last_states_fixed_transformed.npy')
-	outcomes = np.load('outcomes_fixed_transformed.npy')
-	print('outcomes', outcomes.shape)
-	print('last_states', last_states.shape)
-	num_test = 1000
-	total = 10000
-	indices = np.random.choice(total, total, replace=False)
-	train_indices = indices[num_test:]
-	test_indices = indices[:num_test]
-	x_train = last_states[train_indices]
-	x_test = last_states[test_indices]
-	y_train = outcomes[train_indices]
-	y_test = outcomes[test_indices]
+	# verbose = True
+	# num_epochs = 400
+	# # last_states = np.load('last_states.npy')
+	# # outcomes = np.load('outcomes.npy')
+	# last_states = np.load('last_states_fixed_transformed.npy')
+	# outcomes = np.load('outcomes_fixed_transformed.npy')
+	# print('outcomes', outcomes.shape)
+	# print('last_states', last_states.shape)
+	# num_test = 1000
+	# total = 10000
+	# indices = np.random.choice(total, total, replace=False)
+	# train_indices = indices[num_test:]
+	# test_indices = indices[:num_test]
+	# x_train = last_states[train_indices]
+	# x_test = last_states[test_indices]
+	# y_train = outcomes[train_indices]
+	# y_test = outcomes[test_indices]
 
-	batch_size = 100
-	num_train = total - num_test
-	runs_per_epoch = num_train / batch_size
+	# batch_size = 100
+	# num_train = total - num_test
+	# runs_per_epoch = num_train / batch_size
 
-	value_losses = []
-	test_losses = np.zeros(num_epochs)
-	test_accuracies = np.zeros(num_epochs)
+	# value_losses = []
+	# test_losses = np.zeros(num_epochs)
+	# test_accuracies = np.zeros(num_epochs)
 
-	for i in range(num_epochs):
-		if verbose:
-			print('Supervised epoch', i)
-		for start_index in range(0, num_train, batch_size):
-			batch_indices = np.arange(start_index, start_index + batch_size)
-			x_batch = x_train[batch_indices]
-			y_batch = y_train[batch_indices]
-			value_loss, value_predict = network.train_value(x_batch, y_batch)
-			if start_index == 0 and verbose:
-				print('diff', value_predict[:20], y_batch[:20])
-			value_losses.append(value_loss / batch_size)
-		test_loss = network.test_value(x_test, y_test)[0] / num_test
-		test_guess, test_accuracy = network.classify_value(x_test, y_test)
-		test_accuracies[i] = test_accuracy
-		if verbose:
-			print('test_accuracy', test_accuracy)
-			print('test_loss', test_loss)
-		test_losses[i] = test_loss
+	# for i in range(num_epochs):
+	# 	if verbose:
+	# 		print('Supervised epoch', i)
+	# 	for start_index in range(0, num_train, batch_size):
+	# 		batch_indices = np.arange(start_index, start_index + batch_size)
+	# 		x_batch = x_train[batch_indices]
+	# 		y_batch = y_train[batch_indices]
+	# 		value_loss, value_predict = network.train_value(x_batch, y_batch)
+	# 		if start_index == 0 and verbose:
+	# 			print('diff', value_predict[:20], y_batch[:20])
+	# 		value_losses.append(value_loss / batch_size)
+	# 	test_loss = network.test_value(x_test, y_test)[0] / num_test
+	# 	test_guess, test_accuracy = network.classify_value(x_test, y_test)
+	# 	test_accuracies[i] = test_accuracy
+	# 	if verbose:
+	# 		print('test_accuracy', test_accuracy)
+	# 		print('test_loss', test_loss)
+	# 	test_losses[i] = test_loss
 
 	'''
 	MCTS learning with self play second
