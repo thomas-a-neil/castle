@@ -193,15 +193,14 @@ class ChessEnv(object):
         return index
 
 
-def score(representation_of_board, movetime=1000, engine_path=PATH_TO_STOCKFISH_EXE):
+def score(board, movetime=1000, engine_path=PATH_TO_STOCKFISH_EXE):
     """
-    Returns the engine evaluation of board state
+    Returns the engine evaluation of board state. board should be a chess.Board
 
-    >>> start_board = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-    >>> score(start_board)
+    >>> board = chess.Board()
+    >>> score(board)
     0.17
     """
-    board = chess.Board(representation_of_board)
     handler = chess.uci.InfoHandler()
     engine = chess.uci.popen_engine(engine_path)
 
