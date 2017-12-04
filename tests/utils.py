@@ -39,6 +39,9 @@ class MockEnv(object):
     def action_size(self):
         return 2
 
+    def reset(self):
+        return 0
+
     def get_next_state(self, start_state, action):
         """
         Takes a state, action pair (indexes in the discrete case)
@@ -63,6 +66,9 @@ class NumlineEnv(object):
     def action_size(self):
         return 2
 
+    def reset(self):
+        return 0
+
     def get_next_state(self, start_state, action):
         """
         Takes a state, action pair (indexes in the discrete case)
@@ -77,6 +83,7 @@ class NumlineEnv(object):
         return False
 
 numline_env = NumlineEnv()
+
 
 def setup_simple_tree():
     #      0

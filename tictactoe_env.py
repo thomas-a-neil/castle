@@ -2,6 +2,9 @@ import numpy as np
 
 
 class TicTacToeEnv(object):
+
+    START_STATE = np.zeros((2, 3, 3), dtype=int)
+
     def __init__(self):
         """
         state space: 2x3x3
@@ -15,6 +18,9 @@ class TicTacToeEnv(object):
         action_array = self.convert_int_to_action(action_int)
         next_state = state + action_array
         return next_state
+
+    def reset(self):
+        return self.START_STATE
 
     def get_legal_actions(self, state):
         turn_index = 0 if self.is_x_turn(state) else 1

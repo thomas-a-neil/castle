@@ -6,8 +6,8 @@ from tree import Node
 
 def self_play_game(model,
                    env,
-                   start_state,
-                   n_leaf_expansions,
+                   start_state=None,
+                   n_leaf_expansions=20,
                    c_puct=1.0,
                    temperature=1,
                    max_num_turns=40,
@@ -40,6 +40,8 @@ def self_play_game(model,
     verbose: boolean
         If set to True, print the board state after each move
     """
+    if start_state is None:
+        start_state = env.reset()
     state = start_state
     cur_node = Node(state)
     # vector of states
@@ -71,12 +73,15 @@ def self_play_game(model,
     return states, v, action_distributions
 
 
-def random_play_game(env,
-                     start_state,
-                     max_num_turns=40,
-                     verbose=False):
+def play_game(model1,
+              model2,
+              env,
+              start_state=None,
+              max_num_turns=40,
+              verbose=False):
     """
-    Plays a game (defined by the env), where a random action is taken each turn
+    Plays a game (defined by the env), where an action is taken each turn by the models specified. model1
+    moves first, model2 moves second.
     Returns a tuple of (states, winner_vector)
 
     states and winner_vector are vectors of length equal to the number of turns played in the game.
@@ -93,6 +98,8 @@ def random_play_game(env,
     verbose: boolean
         If set to True, print the board state after each move
     """
+    if start_state is None:
+        start_state = env.reset()
     state = start_state
     # vector of states
     states = []
@@ -103,7 +110,10 @@ def random_play_game(env,
         if verbose:
             env.print_board(state)
 
-        action = np.random.choice(env.get_legal_actions(state))
+        if num_turns % 2 == 0:
+            action = model1(state)
+        else:
+            action = model2(state)
         state = env.get_next_state(state, action)
 
         num_turns += 1
@@ -117,3 +127,12 @@ def random_play_game(env,
     v = winner * default_v
     states = np.array(states)
     return states, v
+
+
+class RandomModel(object):
+    def __init__(self, env):
+        self.env = env
+
+    def __call__(self, state):
+        legal_actions = self.env.get_legal_actions(state)
+        return np.random.choice(legal_actions)
