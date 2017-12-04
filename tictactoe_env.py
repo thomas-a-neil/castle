@@ -25,6 +25,21 @@ class TicTacToeEnv(object):
         next_state[1,:] += state[0,:]
         return next_state
 
+    def sample_invariant_transformation(self, state):
+        '''
+        flip rotate
+        '''
+        rot1 = np.rot90(state, axes=(1,2))
+        rot2 = np.rot90(rot1, axes=(1,2))
+
+        rot3 = np.rot90(rot2, axes=(1,2))
+        flip_x = np.flip(state, 1)
+        flip_y = np.flip(state, 2)
+
+        transformations = [rot1, rot2, rot3, flip_x, flip_y]
+        choice = np.random.choice(len(transformations))
+        return transformations[choice]
+
     def get_legality_mask(self, state):
         legal_actions = np.zeros(self.action_dims)
         for i in range(3):

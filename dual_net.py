@@ -146,25 +146,25 @@ class DualNet(object):
         #                  'activation_fn': tf.nn.tanh}]
 
         # Sunday experiment noon to 3pm
-        # shared_layers = []
-        # policy_layers = [{'layer': 'fc', 'num_outputs': 30,
-        #                  'activation_fn': tf.nn.relu},
-        #                  {'layer': 'fc', 'num_outputs': self.action_size,
-        #                   'activation_fn': None}]
-        # value_layers = [{'layer': 'fc', 'num_outputs': 8,
-        #                  'activation_fn': tf.nn.relu},
-        #                 {'layer': 'fc', 'num_outputs': 1,
-        #                  'activation_fn': tf.nn.tanh}]
+        shared_layers = []
+        policy_layers = [{'layer': 'fc', 'num_outputs': 30,
+                         'activation_fn': tf.nn.relu},
+                         {'layer': 'fc', 'num_outputs': self.action_size,
+                          'activation_fn': None}]
+        value_layers = [{'layer': 'fc', 'num_outputs': 8,
+                         'activation_fn': tf.nn.relu},
+                        {'layer': 'fc', 'num_outputs': 1,
+                         'activation_fn': tf.nn.tanh}]
 
         # Sunday experiment noon to 3pm
-        shared_layers = [{'layer': 'conv', 'num_outputs': num_convolutional_filters, 'stride': 1,
-                          'kernel_size': 2, 'activation_fn': tf.nn.relu},
-                          {'layer': 'conv', 'num_outputs': num_convolutional_filters, 'stride': 1,
-                          'kernel_size': 2, 'activation_fn': tf.nn.relu}]
-        policy_layers = [{'layer': 'fc', 'num_outputs': self.action_size,
-                          'activation_fn': None}]
-        value_layers = [{'layer': 'fc', 'num_outputs': 1,
-                         'activation_fn': tf.nn.tanh}]
+        # shared_layers = [{'layer': 'conv', 'num_outputs': num_convolutional_filters, 'stride': 1,
+        #                   'kernel_size': 2, 'activation_fn': tf.nn.relu},
+        #                   {'layer': 'conv', 'num_outputs': num_convolutional_filters, 'stride': 1,
+        #                   'kernel_size': 2, 'activation_fn': tf.nn.relu}]
+        # policy_layers = [{'layer': 'fc', 'num_outputs': self.action_size,
+        #                   'activation_fn': None}]
+        # value_layers = [{'layer': 'fc', 'num_outputs': 1,
+        #                  'activation_fn': tf.nn.tanh}]
 
         self.boards = None
         self.move_legality_mask = tf.placeholder(tf.float32, [None, self.action_size])
@@ -287,3 +287,6 @@ class DualNet(object):
           total_correct += 1
       accuracy = total_correct / float(total)
       return value_guesses, accuracy
+
+    def save_weights(self):
+      

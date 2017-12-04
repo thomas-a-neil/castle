@@ -49,7 +49,8 @@ def expand_node(node, model, env):
     to subsequent states. Returns the value of the current state as
     calculated by the model.
     """
-    vec_action_probs, values = model(np.array([node.state]))
+    invariant_state = env.sample_invariant_transformation(node.state)
+    vec_action_probs, values = model(np.array([invariant_state]))
     # need to take [0] index since we're only putting in one state
     action_probs = vec_action_probs[0]
     value = values[0]
