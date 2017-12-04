@@ -1,5 +1,10 @@
+import os
+
 import numpy as np
 import chess
+import chess.uci
+
+PATH_TO_STOCKFISH_EXE = os.path.expanduser('~/stockfish-8-mac/Mac/stockfish-8-64')
 
 # Map from piece to layer in net input.  0-5 are white.
 INDEX_TO_PIECE_MAP = {0: chess.KING, 6: chess.KING,
@@ -186,3 +191,23 @@ class ChessEnv(object):
         row_number = int(row) - 1
         index = 8 * row_number + col_number
         return index
+
+
+def score(representation_of_board, movetime=1000, engine_path=PATH_TO_STOCKFISH_EXE):
+    """
+    Returns the engine evaluation of board state
+
+    >>> start_board = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+    >>> score(start_board)
+    0.17
+    """
+    board = chess.Board(representation_of_board)
+    handler = chess.uci.InfoHandler()
+    engine = chess.uci.popen_engine(engine_path)
+
+    engine.info_handlers.append(handler)
+    engine.position(board)
+
+    engine.go(searchmoves=board.legal_moves, movetime=movetime)
+
+    return handler.info["score"][1].cp / 100.0
