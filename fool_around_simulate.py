@@ -14,7 +14,29 @@ import matplotlib.pyplot as plt
 from game import self_play_game, random_play_game, play_smart_vs_random_game, play_smart1_vs_smart2_game, play_many_vs_random_games, play_many_smart1_vs_smart2
 
 def main(argv):
+	# gather_data()
 	ttt()
+	
+
+def gather_data():
+	env = TicTacToeEnv()
+	num_iterations = 10**5
+	# last_states = np.zeros((2*num_iterations, 2, 3, 3))
+	# last_outcomes = np.zeros(2*num_iterations)
+	last_states = []
+	last_outcomes = []
+	for i in range(num_iterations):
+		if i % 10000 == 0:
+			print(i)
+		states, outcomes, end_state = random_play_game(env)
+		last_states.extend(states)
+		last_outcomes.extend(outcomes)
+		# last_states[2*i,:,:,:] = states[-1]
+		# last_states[2*i+1,:,:,:] = states[-2]
+		# last_outcomes[2*i] = outcomes[-1]
+		# last_outcomes[2*i+1] = -outcomes[-1]
+	np.save('last_states_fixed.npy', last_states)
+	np.save('outcomes_fixed.npy', last_outcomes)
 
 def ttt():
 	env = TicTacToeEnv()
@@ -23,7 +45,7 @@ def ttt():
 	sess.__enter__()
 	tf.global_variables_initializer().run()
 	start_state = np.zeros((2, 3, 3))
-	n_leaf_expansions = 9
+	n_leaf_expansions = 10
 	c_puct = 10
 	temperature = 1
 
@@ -32,46 +54,50 @@ def ttt():
 	'''
 	Supervised value learning first
 	'''
-	# verbose = True
-	# num_epochs = 200
+	verbose = True
+	num_epochs = 500
 	# last_states = np.load('last_states.npy')
 	# outcomes = np.load('outcomes.npy')
-	# num_test = 1000
-	# total = 10000
-	# indices = np.random.choice(total, total, replace=False)
-	# train_indices = indices[num_test:]
-	# test_indices = indices[:num_test]
-	# x_train = last_states[train_indices]
-	# x_test = last_states[test_indices]
-	# y_train = -outcomes[train_indices]
-	# y_test = -outcomes[test_indices]
+	last_states = np.load('last_states_fixed.npy')
+	outcomes = np.load('outcomes_fixed.npy')
+	print('outcomes', outcomes.shape)
+	print('last_states', last_states.shape)
+	num_test = 1000
+	total = 10000
+	indices = np.random.choice(total, total, replace=False)
+	train_indices = indices[num_test:]
+	test_indices = indices[:num_test]
+	x_train = last_states[train_indices]
+	x_test = last_states[test_indices]
+	y_train = outcomes[train_indices]
+	y_test = outcomes[test_indices]
 
-	# batch_size = 100
-	# num_train = total - num_test
-	# runs_per_epoch = num_train / batch_size
+	batch_size = 100
+	num_train = total - num_test
+	runs_per_epoch = num_train / batch_size
 
-	# value_losses = []
-	# test_losses = np.zeros(num_epochs)
-	# test_accuracies = np.zeros(num_epochs)
+	value_losses = []
+	test_losses = np.zeros(num_epochs)
+	test_accuracies = np.zeros(num_epochs)
 
-	# for i in range(num_epochs):
-	# 	if verbose:
-	# 		print('Supervised epoch', i)
-	# 	for start_index in range(0, num_train, batch_size):
-	# 		batch_indices = np.arange(start_index, start_index + batch_size)
-	# 		x_batch = x_train[batch_indices]
-	# 		y_batch = y_train[batch_indices]
-	# 		value_loss, value_predict = network.train_value(x_batch, y_batch)
-	# 		if start_index == 0 and verbose:
-	# 			print('diff', value_predict[:20], y_batch[:20])
-	# 		value_losses.append(value_loss / batch_size)
-	# 	test_loss = network.test_value(x_test, y_test)[0] / num_test
-	# 	test_guess, test_accuracy = network.classify_value(x_test, y_test)
-	# 	test_accuracies[i] = test_accuracy
-	# 	if verbose:
-	# 		print('test_accuracy', test_accuracy)
-	# 		print('test_loss', test_loss)
-	# 	test_losses[i] = test_loss
+	for i in range(num_epochs):
+		if verbose:
+			print('Supervised epoch', i)
+		for start_index in range(0, num_train, batch_size):
+			batch_indices = np.arange(start_index, start_index + batch_size)
+			x_batch = x_train[batch_indices]
+			y_batch = y_train[batch_indices]
+			value_loss, value_predict = network.train_value(x_batch, y_batch)
+			if start_index == 0 and verbose:
+				print('diff', value_predict[:20], y_batch[:20])
+			value_losses.append(value_loss / batch_size)
+		test_loss = network.test_value(x_test, y_test)[0] / num_test
+		test_guess, test_accuracy = network.classify_value(x_test, y_test)
+		test_accuracies[i] = test_accuracy
+		if verbose:
+			print('test_accuracy', test_accuracy)
+			print('test_loss', test_loss)
+		test_losses[i] = test_loss
 
 	'''
 	MCTS learning with self play second
@@ -119,7 +145,7 @@ def ttt():
 		print('loss', loss)
 		print('value_predict', value_predict[:10], z[:10])
 
-		if i % 10 == 0 and i > 0:
+		if i % 20 == 0 and i > 0:
 			curr_results = play_many_vs_random_games(num_games_v_random, network, env,
 				n_leaf_expansions, c_puct=c_puct, temperature=temperature, max_num_turns=10, verbose=True)
 			test_vs_random_results.append(curr_results)

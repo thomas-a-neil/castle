@@ -271,7 +271,6 @@ def random_play_game(env,
         state = env.get_start_state()
     else:
         state = start_state
-    print('start_state', start_state)
     # vector of states
     states = []
 
@@ -288,12 +287,13 @@ def random_play_game(env,
 
     if verbose:
         env.print_board(state)
+    end_state = state
 
     winner = env.outcome(state) if num_turns <= max_num_turns else 0
     default_v = [1, -1] * (num_turns // 2) + [1] * (num_turns % 2)
     default_v = np.array(default_v)
     v = winner * default_v
     states = np.array(states)
-    return states, v
+    return states, v, end_state
 
 
