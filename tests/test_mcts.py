@@ -1,7 +1,13 @@
 from functools import partial
 import unittest
 
-from mcts import backup, select, expand_node, exploration_bonus_for_c_puct, perform_rollouts, get_action_distribution, get_next_state_with_mcts
+from mcts import (backup,
+                  select,
+                  expand_node,
+                  exploration_bonus_for_c_puct,
+                  perform_rollouts,
+                  get_action_distribution,
+                  get_next_state_with_mcts)
 from tree import Node
 
 from utils import setup_simple_tree, mock_model, mock_env, numline_env, mock_model_numline
@@ -22,8 +28,8 @@ class TestMCTS(unittest.TestCase):
 
         self.assertEqual(edge.action, 0)
         self.assertEqual(edge.num_visits, 1)
-        self.assertEqual(edge.total_action_value, 1.0)
-        self.assertEqual(edge.mean_action_value, 1.0)
+        self.assertEqual(edge.total_action_value, -1.0)
+        self.assertEqual(edge.mean_action_value, -1.0)
 
     def test_two_level_backup(self):
         edge = self.nodes[1].in_edge
@@ -131,30 +137,24 @@ class TestRollouts(unittest.TestCase):
         self.assertEquals(len(root_node.outgoing_edges), 2)
 
     def test_nodes_reuse_tree(self):
-        '''
+        """
         This is a randomized test.  We perform_rollouts for the initial state with 30 leaf expansions
-        We test to see that the node returned from get_next_state_with_mcts holds data from those rollouts 
-        at its current node (now the second node) in addition to one potential next state.  
+        We test to see that the node returned from get_next_state_with_mcts holds data from those rollouts
+        at its current node (now the second node) in addition to one potential next state.
 
         We should fully expand a states that have short depth.
-        '''
+        """
         n_leaf_expansions = 30
         c = 100
         root_node = Node(0)
         temperature = 1
         exploration_bonus = partial(exploration_bonus_for_c_puct, c_puct=c)
         perform_rollouts(root_node, n_leaf_expansions, mock_model_numline, numline_env, exploration_bonus)
-        
-        second_node, action = get_next_state_with_mcts(root_node, temperature, n_leaf_expansions, 
-            mock_model_numline, numline_env, c)
+
+        second_node, action = get_next_state_with_mcts(root_node, temperature, n_leaf_expansions, mock_model_numline, numline_env, c)
 
         self.assertEqual(len(second_node.outgoing_edges), 2)
 
         potential_third_node = second_node.outgoing_edges[0].out_node
 
         self.assertEqual(len(potential_third_node.outgoing_edges), 2)
-
-
-
-
-

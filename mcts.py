@@ -36,11 +36,13 @@ def backup(node, value):
     """
     cur_node = node
     # while not root, move the value up
+    count = 1
     while cur_node.in_edge is not None:
         edge = cur_node.in_edge
         edge.num_visits += 1
-        edge.total_action_value += value
+        edge.total_action_value += (-1)**count * value
         cur_node = edge.in_node
+        count += 1
 
 
 def expand_node(node, model, env):
@@ -49,18 +51,24 @@ def expand_node(node, model, env):
     to subsequent states. Returns the value of the current state as
     calculated by the model.
     """
+    if env.is_game_over(node.state):
+        node.is_expanded = True
+        node.is_terminal = True
+        value = -1  # the game is over on my turn, so I have lost
+        return value
+
     vec_action_probs, values = model(np.array([node.state]))
-    # need to take [0] index since we're only putting in one state
+    # need to take [0] index of vector since we're only putting in one state
     action_probs = vec_action_probs[0]
     value = values[0]
     legal_actions = env.get_legal_actions(node.state)
-    for i, action in enumerate(legal_actions):
-        action_prob = action_probs[i]
+    for action in legal_actions:
+        action_prob = action_probs[action]
         next_state = env.get_next_state(node.state, action)
         child_node = Node(next_state)
         create_new_connection(node, child_node, action, action_prob)
-    # need to take [0] index of value since value is an array of dimension 1
     node.is_expanded = True
+    # need to take [0] index of value since value is an array of dimension 1
     return value[0]
 
 
@@ -91,13 +99,13 @@ def perform_rollouts(root_node,
         value = expand_node(root_node, model, env)
 
     while n_leaf_expansions > 0:
-        # expand root
         edge = select(root_node, exploration_bonus)
-        while edge.num_visits != 0:
+        # find a node you haven't expanded yet, expand it
+        # or, if you get to a terminal state, stop expanding
+        while edge.num_visits != 0 and not edge.out_node.is_terminal:
             cur_node = edge.out_node
             edge = select(cur_node, exploration_bonus)
         cur_node = edge.out_node
-        # find a node you haven't expanded yet, expand it
         value = expand_node(cur_node, model, env)
         backup(cur_node, value)
 

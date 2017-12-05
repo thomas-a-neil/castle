@@ -26,7 +26,7 @@ def self_play_game(model,
         number of leaves to expand in each iteration of MCTS when picking an action
     model: function
         Model to use for computing the value of each state,
-        prob_vector, value = model(node.state, env)
+        [prob_vector], [value] = model([node.state])
     start_state:
         an initial game state (as defined by the environment)
     env:
@@ -89,10 +89,14 @@ def play_game(model1,
 
     Parameters
     ----------
-    start_state:
-        an initial game state (as defined by the environment)
+    model1, model2: function
+        Model to use for computing the value of each state,
+        [prob_vector], [value] = model([node.state])
+        model1 moves first, model2 second
     env:
         game playing environment that can progress game state and give us legal moves
+    start_state:
+        an initial game state (as defined by the environment)
     max_num_turns: int
         maximum number of turns to play out before stopping the game
     verbose: boolean
@@ -111,9 +115,10 @@ def play_game(model1,
             env.print_board(state)
 
         if num_turns % 2 == 0:
-            action = model1(state)
+            distribution, value = model1(np.array([state]))
         else:
-            action = model2(state)
+            distribution, value = model2(np.array([state]))
+        action = np.random.choice(env.action_size, p=distribution[0])
         state = env.get_next_state(state, action)
 
         num_turns += 1
@@ -133,6 +138,18 @@ class RandomModel(object):
     def __init__(self, env):
         self.env = env
 
-    def __call__(self, state):
-        legal_actions = self.env.get_legal_actions(state)
-        return np.random.choice(legal_actions)
+    def __call__(self, states):
+        action_probs = []
+        values = []
+        for state in states:
+            legal_actions = self.env.get_legal_actions(state)
+            action_index = np.random.choice(legal_actions)
+
+            # one hot encode the chosen, legal action
+            action_distribution = np.zeros(self.env.action_size)
+            action_distribution[action_index] = 1.0
+
+            action_probs.append(action_distribution)
+            values.append(np.array([0]))  # all states have equal value
+
+        return (np.array(action_probs), np.array(values))

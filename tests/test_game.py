@@ -45,7 +45,7 @@ class TestTicTacToeGame(unittest.TestCase):
                                        c_puct=1.0,
                                        temperature=1,
                                        max_num_turns=9,
-                                       verbose=True)
+                                       verbose=False)
 
 
 class TestKQKChessGame(unittest.TestCase):

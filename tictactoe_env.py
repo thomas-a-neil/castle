@@ -4,6 +4,7 @@ import numpy as np
 class TicTacToeEnv(object):
 
     START_STATE = np.zeros((2, 3, 3), dtype=int)
+    action_size = 2*3*3
 
     def __init__(self):
         """
@@ -23,6 +24,8 @@ class TicTacToeEnv(object):
         return self.START_STATE
 
     def get_legal_actions(self, state):
+        if self.is_game_over(state):
+            return np.array([])
         turn_index = 0 if self.is_x_turn(state) else 1
         legal_actions = []
         for i in range(3):
