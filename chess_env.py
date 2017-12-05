@@ -44,18 +44,18 @@ class ChessEnv(object):
 
     def get_next_state(self, state, action):
         board = self.map_state_to_board(state)
-        move = self.map_action_to_move(state, action)
+        move = self.map_action_to_move(action)
         board.push(move)
         next_state = self.map_board_to_state(board)
         return next_state
 
     def get_legal_actions(self, state):
         board = self.map_state_to_board(state)
-        legal_moves = board.legal_moves
+        legal_moves = list(board.legal_moves)
         legal_actions = np.zeros(len(legal_moves), dtype=int)
         i = 0
         for move in legal_moves:
-            action = self.map_move_to_action(board, move)
+            action = self.map_move_to_action(move)
             legal_actions[i] = action
             i += 1
         return legal_actions
@@ -148,18 +148,16 @@ class ChessEnv(object):
         return board
 
     def map_action_to_move(self, action):
-        index = np.where(action == 1)[0][0]
+        index = action
         from_pos = int(index / 64)
         to_pos = index % 64
         return chess.Move(from_pos, to_pos)
 
-    def map_move_to_action(self, board, move):
-        action = np.zeros(self.action_size)
-        index = self.move_to_index(board, move)
-        action[index] = 1
-        return action
+    def map_move_to_action(self, move):
+        index = self.move_to_index(move)
+        return index
 
-    def move_to_index(self, board, move):
+    def move_to_index(self, move):
         """
         Translates a chess move to the appropriate index in the action space.
         Parameters
