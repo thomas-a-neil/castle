@@ -19,3 +19,9 @@ For now, add the python path to allow for relative imports. We'll try to remove 
 ```
 PYTHONPATH=. py.test
 ```
+
+# Installing Stockfish
+
+castle uses the Stockfish chess engine to evaluate non-terminal chess positions.
+
+You can download Stockfish [here](https://stockfishchess.org/download/). Unzip it and take note of the path of the executable, as you will need it later to instantiate the engine.
