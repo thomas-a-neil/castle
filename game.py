@@ -53,6 +53,7 @@ def self_play_game(model,
     while not env.is_game_over(cur_node.state) and num_turns <= max_num_turns:
         states.append(cur_node.state)
         if verbose:
+            print('Turn {}'.format(num_turns))
             env.print_board(cur_node.state)
 
         # we pass nodes in to keep work done in previous mcts rollouts.
@@ -62,6 +63,7 @@ def self_play_game(model,
         num_turns += 1
 
     if verbose:
+        print('Turn {}'.format(num_turns))
         env.print_board(cur_node.state)
 
     winner = env.outcome(cur_node.state) if num_turns <= max_num_turns else 0
@@ -112,6 +114,7 @@ def play_game(model1,
     while not env.is_game_over(state) and num_turns <= max_num_turns:
         states.append(state)
         if verbose:
+            print('Turn {}'.format(num_turns))
             env.print_board(state)
 
         if num_turns % 2 == 0:
@@ -124,6 +127,7 @@ def play_game(model1,
         num_turns += 1
 
     if verbose:
+        print('Turn {}'.format(num_turns))
         env.print_board(state)
 
     winner = env.outcome(state) if num_turns <= max_num_turns else 0
