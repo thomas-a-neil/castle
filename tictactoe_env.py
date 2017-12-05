@@ -50,6 +50,26 @@ class TicTacToeEnv(object):
         transformations = [rot3, rot2, rot1, flip_x, flip_y]
         return transformations[transform_index]
 
+    def get_canonical_actions(self, state):
+        if state.sum() == 0:
+            return np.array([0, 1, 4])
+        elif state.sum() == 1:
+            if state[1,0,0] == 1:
+                return np.array([1, 2, 4, 5, 8])
+            elif state[1,0,1] == 1:
+                return np.array([1, 3, 4, 6, 7])
+            elif state[1,1,1] == 1:
+                return np.array([0, 1])
+        else:
+            return self.get_legal_actions(state)
+
+    def get_canonical_mask(self, state):
+        canon_actions = np.zeros(self.action_size)
+        canon_actions_list = self.get_canonical_actions(state)
+        for j in canon_actions_list:
+            canon_actions[j] = 1
+        return np.reshape(canon_actions, -1)
+
     def get_legality_mask(self, state):
         legal_actions = np.zeros(self.action_dims)
         for i in range(3):

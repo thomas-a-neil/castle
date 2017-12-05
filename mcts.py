@@ -53,8 +53,20 @@ def expand_node(node, model, env):
     to subsequent states. Returns the value of the current state as
     calculated by the model.
     """
+    if env.is_game_over(node.state):
+        node.is_expanded = True
+        # print('EXPANDING A NODE THAT IS OVER')
+        if env.outcome(node.state) == 0:
+            return 0
+        else: 
+            return -1
     invariant_state_list, invariant_state, transform_type = env.sample_invariant_transformation(node.state)
-    transform_vec_action_probs, values = model(np.array([invariant_state]))
+
+    if node.state.sum() >= 2:
+        transform_vec_action_probs, values = model(np.array([invariant_state]))
+    else:
+        transform_vec_action_probs, values = model(np.array([node.state]))
+
     # need to take [0] index since we're only putting in one state
     # need to transform back
 
@@ -64,7 +76,10 @@ def expand_node(node, model, env):
     # action_probs = vec_action_probs[0]
     action_probs = vec_action_probs
     value = values[0]
-    legal_actions = env.get_legal_actions(node.state)
+
+    # legal_actions = env.get_legal_actions(node.state)
+    canonical_actions = env.get_canonical_actions(node.state)
+    legal_actions = canonical_actions
     for i, action in enumerate(legal_actions):
         action_prob = action_probs[int(action)]
         next_state = env.get_next_state(node.state, action)
@@ -96,6 +111,7 @@ def perform_rollouts(root_node,
         Function that takes (edge) as input and returns a score based on
         how good the edge is to explore with our exploration rate.
     """
+    # pdb.set_trace()
     cur_node = root_node
 
     # add all edges and children for current node
@@ -121,7 +137,9 @@ def perform_rollouts(root_node,
             value = expand_node(cur_node, model, env)
         else:
             # entered here because we reached an end state
-            value = edge.mean_action_value
+            # value = edge.mean_action_value
+            value = -1
+        # if cur_node
         backup(cur_node, value)
 
         n_leaf_expansions -= 1

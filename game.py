@@ -3,6 +3,7 @@ import numpy as np
 from mcts import get_next_state_with_mcts
 from tree import Node
 
+import pdb
 
 def self_play_game(model,
                    env,
@@ -51,6 +52,7 @@ def self_play_game(model,
     action_distributions = []
 
     num_turns = 0
+    # pdb.set_trace()
     while not env.is_game_over(cur_node.state) and num_turns <= max_num_turns:
         states.append(cur_node.state)
         if verbose:
@@ -190,6 +192,13 @@ def play_smart_vs_random_game(model,
         if num_turns % 2 == smart_first_turn:
             policy, value = model(state)
             # action = np.random.choice(env.action_size, p=policy)
+            # canonical_actions = env.get_canonical_actions(state)
+            # canonical_actions_mask = np.zeros(9)
+            # for j in canonical_actions:
+            #     canonical_actions_mask[j] = 1
+            canonical_actions_mask = env.get_canonical_mask(state)
+
+            policy = np.multiply(canonical_actions_mask, policy)
             action = np.argmax(policy)
             if verbose :
                 print('policy', policy)
@@ -286,6 +295,7 @@ def random_play_game(env,
             env.print_board(state)
 
         action = np.random.choice(env.get_legal_actions(state))
+        # action = np.random.choice(env.get_canonical_actions(state))
         state = env.get_next_state(state, action)
 
         num_turns += 1

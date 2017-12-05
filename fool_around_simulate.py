@@ -73,12 +73,12 @@ def test_load():
 def ttt():
 	env = TicTacToeEnv()
 	sess = tf.Session()
-	network = DualNet(sess, env, learning_rate=0.001, regularization_mult=0.0, n_residual_layers=0, input_shape=[2, 3, 3], action_size=9, num_convolutional_filters=8)
+	network = DualNet(sess, env, learning_rate=0.001, regularization_mult=0.01, n_residual_layers=0, input_shape=[2, 3, 3], action_size=9, num_convolutional_filters=8)
 	sess.__enter__()
 	tf.global_variables_initializer().run()
 	saver = tf.train.Saver()
 	start_state = np.zeros((2, 3, 3))
-	n_leaf_expansions = 30
+	n_leaf_expansions = 50
 	c_puct = 1
 	temperature = [0.8, 0.2]
 
@@ -86,50 +86,50 @@ def ttt():
 	'''
 	Supervised value learning first
 	'''
-	# verbose = True
-	# num_epochs = 400
-	# # last_states = np.load('last_states.npy')
-	# # outcomes = np.load('outcomes.npy')
-	# last_states = np.load('last_states_fixed_transformed.npy')
-	# outcomes = np.load('outcomes_fixed_transformed.npy')
-	# print('outcomes', outcomes.shape)
-	# print('last_states', last_states.shape)
-	# num_test = 1000
-	# total = 10000
-	# indices = np.random.choice(total, total, replace=False)
-	# train_indices = indices[num_test:]
-	# test_indices = indices[:num_test]
-	# x_train = last_states[train_indices]
-	# x_test = last_states[test_indices]
-	# y_train = outcomes[train_indices]
-	# y_test = outcomes[test_indices]
+	verbose = True
+	num_epochs = 20
+	# last_states = np.load('last_states.npy')
+	# outcomes = np.load('outcomes.npy')
+	last_states = np.load('last_states_fixed_transformed.npy')
+	outcomes = np.load('outcomes_fixed_transformed.npy')
+	print('outcomes', outcomes.shape)
+	print('last_states', last_states.shape)
+	num_test = 1000
+	total = 10000
+	indices = np.random.choice(total, total, replace=False)
+	train_indices = indices[num_test:]
+	test_indices = indices[:num_test]
+	x_train = last_states[train_indices]
+	x_test = last_states[test_indices]
+	y_train = outcomes[train_indices]
+	y_test = outcomes[test_indices]
 
-	# batch_size = 100
-	# num_train = total - num_test
-	# runs_per_epoch = num_train / batch_size
+	batch_size = 100
+	num_train = total - num_test
+	runs_per_epoch = num_train / batch_size
 
-	# value_losses = []
-	# test_losses = np.zeros(num_epochs)
-	# test_accuracies = np.zeros(num_epochs)
+	value_losses = []
+	test_losses = np.zeros(num_epochs)
+	test_accuracies = np.zeros(num_epochs)
 
-	# for i in range(num_epochs):
-	# 	if verbose:
-	# 		print('Supervised epoch', i)
-	# 	for start_index in range(0, num_train, batch_size):
-	# 		batch_indices = np.arange(start_index, start_index + batch_size)
-	# 		x_batch = x_train[batch_indices]
-	# 		y_batch = y_train[batch_indices]
-	# 		value_loss, value_predict = network.train_value(x_batch, y_batch)
-	# 		if start_index == 0 and verbose:
-	# 			print('diff', value_predict[:20], y_batch[:20])
-	# 		value_losses.append(value_loss / batch_size)
-	# 	test_loss = network.test_value(x_test, y_test)[0] / num_test
-	# 	test_guess, test_accuracy = network.classify_value(x_test, y_test)
-	# 	test_accuracies[i] = test_accuracy
-	# 	if verbose:
-	# 		print('test_accuracy', test_accuracy)
-	# 		print('test_loss', test_loss)
-	# 	test_losses[i] = test_loss
+	for i in range(num_epochs):
+		if verbose:
+			print('Supervised epoch', i)
+		for start_index in range(0, num_train, batch_size):
+			batch_indices = np.arange(start_index, start_index + batch_size)
+			x_batch = x_train[batch_indices]
+			y_batch = y_train[batch_indices]
+			value_loss, value_predict = network.train_value(x_batch, y_batch)
+			if start_index == 0 and verbose:
+				print('diff', value_predict[:20], y_batch[:20])
+			value_losses.append(value_loss / batch_size)
+		test_loss = network.test_value(x_test, y_test)[0] / num_test
+		test_guess, test_accuracy = network.classify_value(x_test, y_test)
+		test_accuracies[i] = test_accuracy
+		if verbose:
+			print('test_accuracy', test_accuracy)
+			print('test_loss', test_loss)
+		test_losses[i] = test_loss
 
 	'''
 	MCTS learning with self play second
@@ -154,22 +154,26 @@ def ttt():
 		batch_states = []
 		batch_z = []
 		batch_pi = []
+		batch_winners = []
+		batch_num_turn_arr = []
+
 		for j in range(batch_size):
 			states, z, pi = self_play_game(network, env, n_leaf_expansions, 
 				c_puct=c_puct, temperature=temperature, max_num_turns=10, verbose=False)
 			batch_states.extend(states)
 			batch_z.extend(z)
 			batch_pi.extend(pi)
+			batch_winners.append(z[0])
+			batch_num_turn_arr.append(len(states))
 		batch_states = np.array(batch_states)
 		batch_z = np.array(batch_z)
 		batch_pi = np.array(batch_pi)
+		batch_winners = np.array(batch_winners)
+		batch_num_turn_arr = np.array(batch_num_turn_arr)
 
 		# loss, value_loss, policy_loss = network.train(states, pi, z)
 		loss, value_loss, policy_loss, value_predict, policy_predict = network.train(batch_states, batch_pi, batch_z)
-		# network.save_graph(saver, sess, 0)
-		# with open('filename.pickle', 'wb') as handle:
-		# 	pickle.dump(network, handle)
-		# return
+
 		losses[i] = loss 
 		value_losses[i] = value_loss
 		policy_losses[i] = policy_loss
@@ -190,7 +194,7 @@ def ttt():
 			# print('policy_predict', policy_predict[:num_to_print])
 			# print('pi', batch_pi[:num_to_print])
 
-		if i % 20 == 0 and i > 0:
+		if i % 10 == 0 and i > 0:
 			curr_results = play_many_vs_random_games(num_games_v_random, network, env,
 				n_leaf_expansions, c_puct=c_puct, temperature=temperature, max_num_turns=10, verbose=True)
 			test_vs_random_results.append(curr_results)

@@ -11,6 +11,23 @@ class TestTicTacToeEnv(unittest.TestCase):
         self.env = TicTacToeEnv()
         self.start_state = self.env.get_start_state()
 
+    def test_canonical_actions():
+        canon_actions = self.env.get_canonical_actions(self.start_state)
+        self.assertEqual(len(canon_actions), 3)
+
+        action_array = np.zeros(self.env.action_dims, dtype=int)
+        action_array[0, 1] = 1
+        action_int = self.env.convert_action_to_int(action_array)
+        state = self.env.get_next_state(state, action_int)
+
+        canon_actions = self.env.get_canonical_actions(self.start_state)
+        self.assertEqual(len(canon_actions), 4)
+
+        true_canon_actions = np.array([0, 3, 4, 6, 7])
+
+        self.assertTrue(np.array_equal(canon_actions, true_canon_actions))
+
+
     def test_invariant_transformations(self):
         moves = [(1, 1), (0, 1), (2, 2), (2, 0), (0, 0)]
         state = self.start_state

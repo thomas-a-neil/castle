@@ -149,9 +149,20 @@ class DualNet(object):
         #                  'activation_fn': tf.nn.tanh}]
 
         # Sunday experiment noon to 3pm
-        shared_layers = [{'layer': 'fc', 'num_outputs': 60,
-                         'activation_fn': tf.nn.relu},
-                         {'layer': 'fc', 'num_outputs': 40,
+        # shared_layers = [{'layer': 'fc', 'num_outputs': 60,
+        #                  'activation_fn': tf.nn.relu},
+        #                  {'layer': 'fc', 'num_outputs': 40,
+        #                  'activation_fn': tf.nn.relu}]
+        # policy_layers = [{'layer': 'fc', 'num_outputs': 15,
+        #                  'activation_fn': tf.nn.relu},
+        #                 {'layer': 'fc', 'num_outputs': self.action_size,
+        #                   'activation_fn': None}]
+        # value_layers = [{'layer': 'fc', 'num_outputs': 8,
+        #                  'activation_fn': tf.nn.relu},
+        #                 {'layer': 'fc', 'num_outputs': 1,
+        #                  'activation_fn': tf.nn.tanh}]
+
+        shared_layers = [{'layer': 'fc', 'num_outputs': 40,
                          'activation_fn': tf.nn.relu}]
         policy_layers = [{'layer': 'fc', 'num_outputs': 15,
                          'activation_fn': tf.nn.relu},
@@ -212,7 +223,8 @@ class DualNet(object):
         move_legality_mask = np.zeros(shape=(inp.shape[0], self.action_size))
 
         for i in range(inp.shape[0]):
-            move_legality_mask[i] = self.env.get_legality_mask(inp[i])
+            # move_legality_mask[i] = self.env.get_legality_mask(inp[i])
+            move_legality_mask[i] = self.env.get_canonical_mask(inp[i])
         policy, value = self.sess.run([self.policy_predict, self.value_predict],
                                       feed_dict={self.board_placeholder: inp,
                                                  self.move_legality_mask: move_legality_mask})
@@ -234,7 +246,8 @@ class DualNet(object):
         if token_legality_mask is None:
           move_legality_mask = np.zeros(shape=(len(states), self.action_size))
           for i in range(len(states)):
-              move_legality_mask[i] = self.env.get_legality_mask(states[i])
+              # move_legality_mask[i] = self.env.get_legality_mask(states[i])
+              move_legality_mask[i] = self.env.get_canonical_mask(states[i])
         else:
           move_legality_mask = token_legality_mask
         _, loss, value_loss, policy_loss, value_predict, policy_predict = self.sess.run([self.update_op, self.loss, 
