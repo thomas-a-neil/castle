@@ -20,11 +20,11 @@ class TestChessEnv(unittest.TestCase):
 
     def test_move_to_index(self):
         uci_move = chess.Move.from_uci('a1b1')
-        index = self.env.move_to_index(None, uci_move)
+        index = self.env.move_to_index(uci_move)
         self.assertEqual(index, 1)
 
         uci_move = chess.Move.from_uci('a2a3')
-        index = self.env.move_to_index(None, uci_move)
+        index = self.env.move_to_index(uci_move)
         self.assertEqual(index, 528)
 
     def test_board_to_state(self):
