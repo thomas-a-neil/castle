@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 from dual_net import DualNet
-from game import self_play_game, random_play_game
+from game import self_play_game, play_game, RandomModel
 from kqk_chess_env import KQKChessEnv, KQK_CHESS_INPUT_SHAPE
 from tictactoe_env import TicTacToeEnv
 
@@ -34,10 +34,18 @@ class TestTicTacToeGame(unittest.TestCase):
         self.env = TicTacToeEnv()
 
     def test_ttt_game(self):
-        start_state = np.zeros((2, 3, 3), dtype=int)
-        states, v = random_play_game(self.env, start_state)
+        states, v = play_game(RandomModel(self.env), RandomModel(self.env), self.env)
         self.assertLessEqual(len(states), 9)
         self.assertGreaterEqual(len(states), 5)
+
+    def test_ttt_with_mcts(self):
+        states, v, pi = self_play_game(RandomModel(self.env),
+                                       self.env,
+                                       n_leaf_expansions=10,
+                                       c_puct=1.0,
+                                       temperature=1,
+                                       max_num_turns=9,
+                                       verbose=False)
 
 
 class TestKQKChessGame(unittest.TestCase):

@@ -6,8 +6,8 @@ from tree import Node
 
 def self_play_game(model,
                    env,
-                   start_state,
-                   n_leaf_expansions,
+                   start_state=None,
+                   n_leaf_expansions=20,
                    c_puct=1.0,
                    temperature=1,
                    max_num_turns=40,
@@ -26,7 +26,7 @@ def self_play_game(model,
         number of leaves to expand in each iteration of MCTS when picking an action
     model: function
         Model to use for computing the value of each state,
-        prob_vector, value = model(node.state, env)
+        [prob_vector], [value] = model([node.state])
     start_state:
         an initial game state (as defined by the environment)
     env:
@@ -40,6 +40,8 @@ def self_play_game(model,
     verbose: boolean
         If set to True, print the board state after each move
     """
+    if start_state is None:
+        start_state = env.reset()
     state = start_state
     cur_node = Node(state)
     # vector of states
@@ -71,12 +73,15 @@ def self_play_game(model,
     return states, v, action_distributions
 
 
-def random_play_game(env,
-                     start_state,
-                     max_num_turns=40,
-                     verbose=False):
+def play_game(model1,
+              model2,
+              env,
+              start_state=None,
+              max_num_turns=40,
+              verbose=False):
     """
-    Plays a game (defined by the env), where a random action is taken each turn
+    Plays a game (defined by the env), where an action is taken each turn by the models specified. model1
+    moves first, model2 moves second.
     Returns a tuple of (states, winner_vector)
 
     states and winner_vector are vectors of length equal to the number of turns played in the game.
@@ -84,15 +89,21 @@ def random_play_game(env,
 
     Parameters
     ----------
-    start_state:
-        an initial game state (as defined by the environment)
+    model1, model2: function
+        Model to use for computing the value of each state,
+        [prob_vector], [value] = model([node.state])
+        model1 moves first, model2 second
     env:
         game playing environment that can progress game state and give us legal moves
+    start_state:
+        an initial game state (as defined by the environment)
     max_num_turns: int
         maximum number of turns to play out before stopping the game
     verbose: boolean
         If set to True, print the board state after each move
     """
+    if start_state is None:
+        start_state = env.reset()
     state = start_state
     # vector of states
     states = []
@@ -103,7 +114,11 @@ def random_play_game(env,
         if verbose:
             env.print_board(state)
 
-        action = np.random.choice(env.get_legal_actions(state))
+        if num_turns % 2 == 0:
+            distribution, value = model1(np.array([state]))
+        else:
+            distribution, value = model2(np.array([state]))
+        action = np.random.choice(env.action_size, p=distribution[0])
         state = env.get_next_state(state, action)
 
         num_turns += 1
@@ -117,3 +132,24 @@ def random_play_game(env,
     v = winner * default_v
     states = np.array(states)
     return states, v
+
+
+class RandomModel(object):
+    def __init__(self, env):
+        self.env = env
+
+    def __call__(self, states):
+        action_probs = []
+        values = []
+        for state in states:
+            legal_actions = self.env.get_legal_actions(state)
+            action_index = np.random.choice(legal_actions)
+
+            # one hot encode the chosen, legal action
+            action_distribution = np.zeros(self.env.action_size)
+            action_distribution[action_index] = 1.0
+
+            action_probs.append(action_distribution)
+            values.append(np.array([0]))  # all states have equal value
+
+        return (np.array(action_probs), np.array(values))
